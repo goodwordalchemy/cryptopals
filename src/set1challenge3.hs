@@ -1,5 +1,6 @@
 import Data.Bits(xor)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import Data.Char(toLower, isLetter)
 import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
@@ -67,9 +68,8 @@ chiSquaredFreqScore = sum
                     . Lib.bytesToString
 
 xorWithLetter :: B.ByteString -> Char -> B.ByteString
-xorWithLetter text letter = B.map xorWord text
-    where
-        xorWord x = x `xor` (charToWord8 letter)
+xorWithLetter text letter = Lib.fixedXOR text 
+                          $ BC.replicate (B.length text) letter
 
 scorePossibleXorKey :: B.ByteString -> Char -> Float
 scorePossibleXorKey text key = chiSquaredFreqScore 
