@@ -8,9 +8,12 @@ module Lib (
     hexStringToBytes,
     charToWord8,
     word8ToChar,
+    fixedXOR,
 ) where
 
+import Data.Bits(xor)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.Text as T
@@ -47,3 +50,9 @@ charToWord8 = B.head . TE.encodeUtf8 . T.singleton
 
 word8ToChar :: Word8 -> Char
 word8ToChar = head . T.unpack . TE.decodeUtf8 . B.singleton
+
+-- xor *-cryption
+fixedXOR :: B.ByteString -> B.ByteString -> B.ByteString
+fixedXOR p ek = B.pack 
+              $ B.zipWith xor ek p
+

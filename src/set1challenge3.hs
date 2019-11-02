@@ -8,8 +8,6 @@ import Data.Word
 
 import Lib
 
-type EncodedByteString = B.ByteString
-
 cipherText :: String
 cipherText  = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
 
@@ -60,7 +58,7 @@ letterScore (l, obsCount) = calc (expCount l) (fromIntegral obsCount)
         expCount letter = lookupFrequency letter
         calc exp obs = ((exp - obs)**2) / exp
 
-chiSquaredFreqScore :: EncodedByteString -> Float
+chiSquaredFreqScore :: B.ByteString -> Float
 chiSquaredFreqScore = sum 
                     . map letterScore 
                     . filter (\(l, _) -> Map.member l expectedFrequencies)
@@ -68,19 +66,19 @@ chiSquaredFreqScore = sum
                     . map toLower
                     . Lib.bytesToString
 
-xorWithLetter :: EncodedByteString -> Char -> EncodedByteString
+xorWithLetter :: B.ByteString -> Char -> B.ByteString
 xorWithLetter text letter = B.map xorWord text
     where
         xorWord x = x `xor` (charToWord8 letter)
 
-scorePossibleXorKey :: EncodedByteString -> Char -> Float
+scorePossibleXorKey :: B.ByteString -> Char -> Float
 scorePossibleXorKey text key = chiSquaredFreqScore 
                              $ xorWithLetter text key
 
 snd' :: (a, b, c) -> b
 snd' (a, b, c) = b
 
-sortedLetterScores :: EncodedByteString -> [(Char, Float, String)]
+sortedLetterScores :: B.ByteString -> [(Char, Float, String)]
 sortedLetterScores text = sortOn snd' lettersWithScores
     where
         lettersWithScores :: [(Char, Float, String)]
