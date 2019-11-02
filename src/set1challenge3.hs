@@ -1,7 +1,7 @@
 import Data.Bits(xor)
 import qualified Data.ByteString as B
-import Data.Char(toLower)
-import Data.List(sortOn)
+import Data.Char(toLower, isLetter)
+import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Tuple(snd)
 import Data.Word
@@ -16,55 +16,80 @@ cipherText  = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3
 cipherTextAsBS :: B.ByteString
 cipherTextAsBS = Lib.hexStringToBytes cipherText
 
-characterFrequencies :: Map.Map Char Float
-characterFrequencies = Map.fromList [
-    ('a', 8.167),
-    ('b', 1.492),
-    ('c', 2.782),
-    ('d', 4.253),
-    ('e', 12.702),
-    ('f', 2.228),
-    ('g', 2.015),
-    ('h', 6.094),
-    ('i', 6.966),
-    ('j', 0.153),
-    ('k', 0.772),
-    ('l', 4.025),
-    ('m', 2.406),
-    ('n', 6.749),
-    ('o', 7.507),
-    ('p', 1.929),
-    ('q', 0.095),
-    ('r', 5.987),
-    ('s', 6.327),
-    ('t', 9.056),
-    ('u', 2.758),
-    ('v', 0.978),
-    ('w', 2.360),
-    ('x', 0.150),
-    ('y', 1.974),
-    ('z', 0.07)]
+
+expectedFrequencies :: Map.Map Char Float
+expectedFrequencies = Map.fromList [ ('a', 0.08167)
+                                   , ('b', 0.01492)
+                                   , ('c', 0.02782)
+                                   , ('d', 0.04253)
+                                   , ('e', 10.02702)
+                                   , ('f', 0.02228)
+                                   , ('g', 0.02015)
+                                   , ('h', 0.06094)
+                                   , ('i', 0.06966)
+                                   , ('j', 0.00153)
+                                   , ('k', 0.00772)
+                                   , ('l', 0.04025)
+                                   , ('m', 0.02406)
+                                   , ('n', 0.06749)
+                                   , ('o', 0.07507)
+                                   , ('p', 0.01929)
+                                   , ('q', 0.00095)
+                                   , ('r', 0.05987)
+                                   , ('s', 0.06327)
+                                   , ('t', 0.09056)
+                                   , ('u', 0.02758)
+                                   , ('v', 0.00978)
+                                   , ('w', 0.02360)
+                                   , ('x', 0.00150)
+                                   , ('y', 0.01974)
+                                   , ('z', 0.0007)
+                                   ]
+
+lookupFrequency :: Char -> Float
+lookupFrequency letter = case Map.lookup letter expectedFrequencies of 
+        Just x -> x
+        Nothing -> 0
+
+nOccurances :: String -> [(Char, Int)]
+nOccurances = map (\l -> (head l, length l)) . groupBy (==) . sort
+
+letterScore :: (Char, Int) -> Float
+letterScore (l, obsCount) = calc (expCount l) (fromIntegral obsCount)
+    where
+        expCount letter = lookupFrequency letter
+        calc exp obs = ((exp - obs)**2) / exp
+
+chiSquaredFreqScore :: EncodedByteString -> Float
+chiSquaredFreqScore = sum 
+                    . map letterScore 
+                    . filter (\(l, _) -> Map.member l expectedFrequencies)
+                    . nOccurances 
+                    . map toLower
+                    . Lib.bytesToString
 
 xorWithLetter :: EncodedByteString -> Char -> EncodedByteString
 xorWithLetter text letter = B.map xorWord text
     where
         xorWord x = x `xor` (charToWord8 letter)
 
-scoreLetter :: Char -> Float
-scoreLetter l = if (toLower l) `elem` "etaoin shrdlu" then 1 else 0
--- scoreLetter l = (Map.findWithDefault 0 l characterFrequencies) ** 2
+scorePossibleXorKey :: EncodedByteString -> Char -> Float
+scorePossibleXorKey text key = chiSquaredFreqScore 
+                             $ xorWithLetter text key
 
-letterScore :: EncodedByteString -> Char -> Float
-letterScore text letter = sum $ map scoreLetter xoredChars
+snd' :: (a, b, c) -> b
+snd' (a, b, c) = b
+
+sortedLetterScores :: EncodedByteString -> [(Char, Float, String)]
+sortedLetterScores text = sortOn snd' lettersWithScores
     where
-        xoredChars = map (toLower . word8ToChar) xored
-        xored = B.unpack $ xorWithLetter text letter
+        lettersWithScores :: [(Char, Float, String)]
+        lettersWithScores = map letterWithScore (['a'..'z'] ++ ['A'..'Z'])
 
-sortedLetterScores :: EncodedByteString -> [(Char, Float)]
-sortedLetterScores text = sortOn snd lettersWithScores
-    where
-        lettersWithScores :: [(Char, Float)]
-        lettersWithScores = map letterWithScore ['a'..'z']
+        letterWithScore :: Char -> (Char, Float, String)
+        letterWithScore l = (l, scorePossibleXorKey text l, decodedText l)
 
-        letterWithScore :: Char -> (Char, Float)
-        letterWithScore l = (l, letterScore text l)
+        decodedText l = Lib.bytesToString $ xorWithLetter text l
+
+main = do
+    mapM_ print $ take 5 $ sortedLetterScores cipherTextAsBS

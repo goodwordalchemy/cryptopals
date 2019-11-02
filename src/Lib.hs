@@ -32,7 +32,7 @@ bytesToHex :: B.ByteString -> B.ByteString
 bytesToHex = B16.encode
 
 hexStringToBytes :: String -> B.ByteString
-hexStringToBytes = bytesToHex . stringToBytes 
+hexStringToBytes = hexToBytes . stringToBytes 
 
 -- String to Bytes Conversions
 
