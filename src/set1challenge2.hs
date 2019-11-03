@@ -1,6 +1,7 @@
 module Challenge_2 () where 
 
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import Lib
 
 xorHexes :: B.ByteString -> B.ByteString -> B.ByteString
@@ -23,7 +24,7 @@ main :: IO ()
 main = do
     putStrLn "The should be equal..."
     putStr "expect: "
-    B.putStrLn expectedCipherText
+    BC.putStrLn expectedCipherText
 
     putStr "result: "
     putStrLn $ challenge_2

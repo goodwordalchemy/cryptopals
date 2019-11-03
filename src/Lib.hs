@@ -9,6 +9,7 @@ module Lib (
     charToWord8,
     word8ToChar,
     fixedXOR,
+    xorWithLetter,
     sortedLetterScores,
 ) where
 
@@ -61,6 +62,11 @@ fixedXOR :: B.ByteString -> B.ByteString -> B.ByteString
 fixedXOR p ek = B.pack 
               $ B.zipWith xor ek p
 
+xorWithLetter :: B.ByteString -> Char -> B.ByteString
+xorWithLetter text letter = Lib.fixedXOR text 
+                          $ BC.replicate (B.length text) letter
+
+-- frequency analysis
 expectedFrequencies :: Map.Map Char Float
 expectedFrequencies = Map.fromList [ ('a', 11.682 / 100)
                                    , ('b', 4.434 / 100)
@@ -118,15 +124,14 @@ scoreString text = chiSquaredFreqScore text
 snd' :: (a, b, c) -> b
 snd' (a, b, c) = b
 
-xorWithLetter :: B.ByteString -> Char -> B.ByteString
-xorWithLetter text letter = Lib.fixedXOR text 
-                          $ BC.replicate (B.length text) letter
+possibleLetters :: [Char]
+possibleLetters = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
 
 sortedLetterScores :: B.ByteString -> [(Char, Float, String)]
 sortedLetterScores text = sortOn snd' lettersWithScores
     where
         lettersWithScores :: [(Char, Float, String)]
-        lettersWithScores = map letterWithScore (['a'..'z'] ++ ['A'..'Z'])
+        lettersWithScores = map letterWithScore possibleLetters
 
         letterWithScore :: Char -> (Char, Float, String)
         letterWithScore l = let dt = decodeText l 

@@ -1,6 +1,7 @@
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.List(sortOn)
+import Data.List(sortOn, map)
+import Debug.Trace
 import System.IO
 
 import Lib
@@ -16,16 +17,15 @@ mostLikelyPlaintexts candidates = sortOn (snd') allScores
                     $ map Lib.sortedLetterScores candidates
                     
 fileName :: String
-fileName = "data/4.txt" 
--- fileName = "data/test.txt"
+-- fileName = "data/4.txt" 
+fileName = "data/test.txt"
 
 loadCandidates :: IO [B.ByteString]
 loadCandidates = do
-    handle <- openFile fileName ReadMode
-    contents <- hGetContents handle
-    return $ map Lib.hexStringToBytes $ lines contents
+    contents <- BC.readFile fileName
+    return $ map Lib.hexToBytes $ BC.lines contents
     
 main = do
     candidates <- loadCandidates
     let winners = mostLikelyPlaintexts candidates
-    mapM_ print $ take 100 $ winners
+    mapM_ print $ take 10 $ winners
