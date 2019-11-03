@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Tuple(snd)
 import Data.Word(Word8)
+import Debug.Trace
 
 -- Base64 functions
 base64ToBytes :: B.ByteString -> B.ByteString
@@ -68,32 +69,33 @@ xorWithLetter text letter = Lib.fixedXOR text
 
 -- frequency analysis
 expectedFrequencies :: Map.Map Char Float
-expectedFrequencies = Map.fromList [ ('a', 11.682 / 100)
-                                   , ('b', 4.434 / 100)
-                                   , ('c', 5.238 / 100)
-                                   , ('d', 3.174 / 100)
-                                   , ('e', 2.799 / 100)
-                                   , ('f', 4.027 / 100)
-                                   , ('g', 1.642 / 100)
-                                   , ('h', 4.200 / 100)
-                                   , ('i', 7.294 / 100)
-                                   , ('j', 0.511 / 100)
-                                   , ('k', 0.456 / 100)
-                                   , ('l', 2.415 / 100)
-                                   , ('m', 3.826 / 100)
-                                   , ('n', 2.284 / 100)
-                                   , ('o', 7.631 / 100)
-                                   , ('p', 4.319 / 100)
-                                   , ('q', 0.222 / 100)
-                                   , ('r', 2.826 / 100)
-                                   , ('s', 6.686 / 100)
-                                   , ('t', 15.978 / 100)
-                                   , ('u', 1.183 / 100)
-                                   , ('v', 0.824 / 100)
-                                   , ('w', 5.497 / 100)
-                                   , ('x', 0.045 / 100)
-                                   , ('y', 0.763 / 100)
-                                   , ('z', 0.045 / 100)
+expectedFrequencies = Map.fromList [ ('a', 8.167)
+                                   , ('b', 1.492)
+                                   , ('c', 2.782)
+                                   , ('d', 4.253)
+                                   , ('e', 2.702)
+                                   , ('f', 2.228)
+                                   , ('g', 2.015)
+                                   , ('h', 6.094)
+                                   , ('i', 6.966)
+                                   , ('j', 0.153)
+                                   , ('k', 0.772)
+                                   , ('l', 4.025)
+                                   , ('m', 2.406)
+                                   , ('n', 6.749)
+                                   , ('o', 7.507)
+                                   , ('p', 1.929)
+                                   , ('q', 0.095)
+                                   , ('r', 5.987)
+                                   , ('s', 6.327)
+                                   , ('t', 9.056)
+                                   , ('u', 2.758)
+                                   , ('v', 0.978)
+                                   , ('w', 2.360)
+                                   , ('x', 0.150)
+                                   , ('y', 1.974)
+                                   , ('z', 0.074)
+                                   , (' ', 10)
                                    ]
 
 lookupFrequency :: Char -> Float
@@ -104,19 +106,27 @@ lookupFrequency letter = case Map.lookup letter expectedFrequencies of
 nOccurances :: String -> [(Char, Int)]
 nOccurances = map (\l -> (head l, length l)) . groupBy (==) . sort
 
-letterScore :: (Char, Int) -> Float
-letterScore (l, obsCount) = calc (expCount l) (fromIntegral obsCount)
-    where
-        expCount letter = lookupFrequency letter
-        calc exp obs = ((exp - obs)**2) / exp
+getLetterScoreFunc :: Int -> Map.Map Char Int -> (Char -> Float -> Float -> Float)
+getLetterScoreFunc textLen obsCounts = (\letter freq acc -> 
+    let
+        obs = fromIntegral $ Map.findWithDefault 0 letter obsCounts 
+        exp = freq * (fromIntegral textLen)
+    in (exp-obs)**2/exp
+                                      )
+
 
 chiSquaredFreqScore :: B.ByteString -> Float
-chiSquaredFreqScore = sum 
-                    . map letterScore 
-                    . filter (\(l, _) -> Map.member l expectedFrequencies)
-                    . nOccurances 
-                    . map toLower
-                    . Lib.bytesToString
+chiSquaredFreqScore text = Map.foldrWithKey letterScore 0 expectedFrequencies
+    where
+        letterScore = getLetterScoreFunc textLen observedFrequencies
+        observedFrequencies = Map.fromList
+                           $ filter letterInExpectedFrequencies
+                           . nOccurances 
+                           . map toLower
+                           . Lib.bytesToString $ text
+        letterInExpectedFrequencies (l, _) = Map.member l expectedFrequencies
+        textLen = B.length text
+
 
 scoreString :: B.ByteString -> Float
 scoreString text = chiSquaredFreqScore text
