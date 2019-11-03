@@ -17,7 +17,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
-import Data.Char(isLetter, toLower)
+import Data.Char(isLetter, toLower, isControl, chr)
 import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -62,32 +62,32 @@ fixedXOR p ek = B.pack
               $ B.zipWith xor ek p
 
 expectedFrequencies :: Map.Map Char Float
-expectedFrequencies = Map.fromList [ ('a', 0.08167)
-                                   , ('b', 0.01492)
-                                   , ('c', 0.02782)
-                                   , ('d', 0.04253)
-                                   , ('e', 10.02702)
-                                   , ('f', 0.02228)
-                                   , ('g', 0.02015)
-                                   , ('h', 0.06094)
-                                   , ('i', 0.06966)
-                                   , ('j', 0.00153)
-                                   , ('k', 0.00772)
-                                   , ('l', 0.04025)
-                                   , ('m', 0.02406)
-                                   , ('n', 0.06749)
-                                   , ('o', 0.07507)
-                                   , ('p', 0.01929)
-                                   , ('q', 0.00095)
-                                   , ('r', 0.05987)
-                                   , ('s', 0.06327)
-                                   , ('t', 0.09056)
-                                   , ('u', 0.02758)
-                                   , ('v', 0.00978)
-                                   , ('w', 0.02360)
-                                   , ('x', 0.00150)
-                                   , ('y', 0.01974)
-                                   , ('z', 0.0007)
+expectedFrequencies = Map.fromList [ ('a', 11.682 / 100)
+                                   , ('b', 4.434 / 100)
+                                   , ('c', 5.238 / 100)
+                                   , ('d', 3.174 / 100)
+                                   , ('e', 2.799 / 100)
+                                   , ('f', 4.027 / 100)
+                                   , ('g', 1.642 / 100)
+                                   , ('h', 4.200 / 100)
+                                   , ('i', 7.294 / 100)
+                                   , ('j', 0.511 / 100)
+                                   , ('k', 0.456 / 100)
+                                   , ('l', 2.415 / 100)
+                                   , ('m', 3.826 / 100)
+                                   , ('n', 2.284 / 100)
+                                   , ('o', 7.631 / 100)
+                                   , ('p', 4.319 / 100)
+                                   , ('q', 0.222 / 100)
+                                   , ('r', 2.826 / 100)
+                                   , ('s', 6.686 / 100)
+                                   , ('t', 15.978 / 100)
+                                   , ('u', 1.183 / 100)
+                                   , ('v', 0.824 / 100)
+                                   , ('w', 5.497 / 100)
+                                   , ('x', 0.045 / 100)
+                                   , ('y', 0.763 / 100)
+                                   , ('z', 0.045 / 100)
                                    ]
 
 lookupFrequency :: Char -> Float
@@ -112,16 +112,15 @@ chiSquaredFreqScore = sum
                     . map toLower
                     . Lib.bytesToString
 
-xorWithLetter :: B.ByteString -> Char -> B.ByteString
-xorWithLetter text letter = Lib.fixedXOR text 
-                          $ BC.replicate (B.length text) letter
-
-scorePossibleXorKey :: B.ByteString -> Char -> Float
-scorePossibleXorKey text key = chiSquaredFreqScore 
-                             $ xorWithLetter text key
+scoreString :: B.ByteString -> Float
+scoreString text = chiSquaredFreqScore text
 
 snd' :: (a, b, c) -> b
 snd' (a, b, c) = b
+
+xorWithLetter :: B.ByteString -> Char -> B.ByteString
+xorWithLetter text letter = Lib.fixedXOR text 
+                          $ BC.replicate (B.length text) letter
 
 sortedLetterScores :: B.ByteString -> [(Char, Float, String)]
 sortedLetterScores text = sortOn snd' lettersWithScores
@@ -130,6 +129,7 @@ sortedLetterScores text = sortOn snd' lettersWithScores
         lettersWithScores = map letterWithScore (['a'..'z'] ++ ['A'..'Z'])
 
         letterWithScore :: Char -> (Char, Float, String)
-        letterWithScore l = (l, scorePossibleXorKey text l, decodedText l)
+        letterWithScore l = let dt = decodeText l 
+                            in (l, scoreString dt, Lib.bytesToString dt)
 
-        decodedText l = Lib.bytesToString $ xorWithLetter text l
+        decodeText l = xorWithLetter text l
