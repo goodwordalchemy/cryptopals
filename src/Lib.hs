@@ -127,8 +127,11 @@ getLetterScoreFunc textLen obsCounts = (\letter freq acc ->
                                       )
 
 
+isControl' :: Char -> Bool
+isControl' c = isControl c && c /= '\n'
+
 chiSquaredFreqScore :: B.ByteString -> Float
-chiSquaredFreqScore text = (controlCharCoef**10) * chiSquared
+chiSquaredFreqScore text = (controlCharCoef**100) * chiSquared
     where
         controlCharCoef = (fromIntegral $ B.length text) / nNonControlChars 
         nNonControlChars = fromIntegral $ B.length nonControlChars
@@ -141,7 +144,7 @@ chiSquaredFreqScore text = (controlCharCoef**10) * chiSquared
                            . map toLower
                            . bytesToString 
                            $ nonControlChars
-        nonControlChars = BC.filter (not . isControl) $ text
+        nonControlChars = BC.filter (not . isControl') $ text
         letterInExpectedFrequencies (l, _) = Map.member l expectedFrequencies
         textLen = B.length text
 

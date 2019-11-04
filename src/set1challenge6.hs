@@ -30,7 +30,7 @@ normalizedHammingSizeOffset size text = h / s
         s = fromIntegral size
 
 bestKeySizesWithScore :: B.ByteString -> [(Int, Float)]
-bestKeySizesWithScore text = take 3 
+bestKeySizesWithScore text = take 5
                   $ sortOn snd 
                   $ sizesAndScores
     where
@@ -99,9 +99,12 @@ testHammingDistanceKeySizeOffset = do
         result = hammingKeySizeOffset 14 text
     putStrLn $ "This should be 37 ==> " ++ show result
 
+filename :: String
+filename = "data/6.txt"
+
 loadEncryptedFile :: IO B.ByteString
 loadEncryptedFile = do
-    contents <- B.readFile "data/6.txt"
+    contents <- B.readFile filename
     return $ Lib.base64ToBytes 
            . BC.concat 
            . BC.lines $ contents 
@@ -110,7 +113,6 @@ loadEncryptedFile = do
 testDecryption :: IO ()
 testDecryption = do
     cipherText <- loadEncryptedFile
-    -- BC.putStrLn cipherText
     let results = bestDecryptions cipherText
     print results    
 
