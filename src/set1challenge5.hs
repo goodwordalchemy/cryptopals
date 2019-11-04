@@ -17,16 +17,6 @@ expectedCipherText = Lib.stringToBytes "\
 key :: B.ByteString
 key = Lib.stringToBytes "ICE"
 
-repeatedByteString :: Int -> B.ByteString -> B.ByteString -> B.ByteString
-repeatedByteString 0 bs acc = acc
-repeatedByteString n bs acc = result
-    where result = repeatedByteString (n-1) bs (B.append bs acc)
-
-repeatingXOR :: B.ByteString -> B.ByteString -> B.ByteString
-repeatingXOR text key = Lib.fixedXOR text rKey
-    where 
-        rKey = repeatedByteString nTimes key key
-        nTimes = (B.length text) `div` (B.length key) + 1
 
 main :: IO ()
 main = do
@@ -35,4 +25,4 @@ main = do
     BC.putStrLn expectedCipherText
 
     putStr "result: "
-    BC.putStrLn $ Lib.bytesToHex $ repeatingXOR plainText key
+    BC.putStrLn $ Lib.bytesToHex $ Lib.repeatingXOR plainText key

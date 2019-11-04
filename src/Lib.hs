@@ -11,6 +11,8 @@ module Lib (
     fixedXOR,
     xorWithLetter,
     sortedLetterScores,
+    repeatingXOR,
+    mostLikelyXorKey
 ) where
 
 import Data.Bits(xor)
@@ -64,8 +66,19 @@ fixedXOR p ek = B.pack
               $ B.zipWith xor ek p
 
 xorWithLetter :: B.ByteString -> Char -> B.ByteString
-xorWithLetter text letter = Lib.fixedXOR text 
+xorWithLetter text letter = fixedXOR text 
                           $ BC.replicate (B.length text) letter
+
+repeatedByteString :: Int -> B.ByteString -> B.ByteString -> B.ByteString
+repeatedByteString 0 bs acc = acc
+repeatedByteString n bs acc = result
+    where result = repeatedByteString (n-1) bs (B.append bs acc)
+
+repeatingXOR :: B.ByteString -> B.ByteString -> B.ByteString
+repeatingXOR text key = fixedXOR text rKey
+    where 
+        rKey = repeatedByteString nTimes key key
+        nTimes = (B.length text) `div` (B.length key) + 1
 
 -- frequency analysis
 expectedFrequencies :: Map.Map Char Float
@@ -123,7 +136,7 @@ chiSquaredFreqScore text = Map.foldrWithKey letterScore 0 expectedFrequencies
                            $ filter letterInExpectedFrequencies
                            . nOccurances 
                            . map toLower
-                           . Lib.bytesToString $ text
+                           . bytesToString $ text
         letterInExpectedFrequencies (l, _) = Map.member l expectedFrequencies
         textLen = B.length text
 
@@ -148,3 +161,7 @@ sortedLetterScores text = sortOn snd' lettersWithScores
                             in (l, scoreString dt, Lib.bytesToString dt)
 
         decodeText l = xorWithLetter text l
+
+mostLikelyXorKey :: B.ByteString -> Char
+mostLikelyXorKey text = key
+    where (key, _, _) = head $ sortedLetterScores text
