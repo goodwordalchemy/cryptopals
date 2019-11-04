@@ -17,8 +17,8 @@ mostLikelyPlaintexts candidates = sortOn (snd') allScores
                     $ map Lib.sortedLetterScores candidates
                     
 fileName :: String
--- fileName = "data/4.txt" 
-fileName = "data/test.txt"
+fileName = "data/4.txt" 
+-- fileName = "data/test.txt"
 
 loadCandidates :: IO [B.ByteString]
 loadCandidates = do
