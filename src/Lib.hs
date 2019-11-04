@@ -20,7 +20,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
-import Data.Char(isLetter, toLower, isControl, chr)
+import Data.Char(isLetter, toLower, isControl, chr, isPunctuation)
 import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -126,15 +126,23 @@ getLetterScoreFunc textLen obsCounts = (\letter freq acc ->
     in (exp-obs)**2/exp
                                       )
 
-
 isControl' :: Char -> Bool
-isControl' c = isControl c && c /= '\n'
+isControl' c = isControl c && c /= '\n' || '\65533' == c
+
+isPunctuation' :: Char -> Bool
+isPunctuation' c = isPunctuation c && c `notElem` [',','.','\'']
 
 chiSquaredFreqScore :: B.ByteString -> Float
-chiSquaredFreqScore text = (controlCharCoef**100) * chiSquared
+chiSquaredFreqScore text = controlCharCoef + punctCoef + chiSquared
     where
-        controlCharCoef = (fromIntegral $ B.length text) / nNonControlChars 
+        controlCharCoef = 1000 * (textLength / nNonControlChars)
         nNonControlChars = fromIntegral $ B.length nonControlChars
+
+        punctCoef = (nPunct / textLength)*200
+        nPunct = fromIntegral . B.length
+               $ BC.filter isPunctuation' text
+
+        textLength = fromIntegral $ B.length text
 
         chiSquared = Map.foldrWithKey letterScore 0 expectedFrequencies
         letterScore = getLetterScoreFunc textLen observedFrequencies
@@ -156,7 +164,8 @@ snd' :: (a, b, c) -> b
 snd' (a, b, c) = b
 
 possibleLetters :: [Char]
-possibleLetters = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
+-- possibleLetters = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
+possibleLetters = map chr [0..255]
 
 sortedLetterScores :: B.ByteString -> [(Char, Float, String)]
 sortedLetterScores text = sortOn snd' lettersWithScores

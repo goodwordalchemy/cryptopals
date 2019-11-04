@@ -11,6 +11,13 @@ import Lib
 mapWithOrig :: (a -> b) -> [a] -> [(a, b)]
 mapWithOrig func = map (\a -> (a, func a)) 
 
+splitIntoChunks :: Int -> B.ByteString -> [B.ByteString]
+splitIntoChunks n text 
+    | text == B.empty = []
+    | B.length text < n = []
+    | otherwise = front : splitIntoChunks n rest
+    where (front, rest) = B.splitAt n text
+
 hamming :: B.ByteString -> B.ByteString -> Int
 hamming a b = B.foldl numSetBits 0 $ Lib.fixedXOR a b
     where 
@@ -29,28 +36,29 @@ normalizedHammingSizeOffset size text = h / s
         h = fromIntegral $ hammingKeySizeOffset size text
         s = fromIntegral size
 
+avgNormedHammingSizeOffset :: Int -> B.ByteString -> Float
+avgNormedHammingSizeOffset size text = sumChunks / nTrials
+    where 
+        sumChunks = sum $ map (normalizedHammingSizeOffset size) chunks
+        nTrials  = fromIntegral $ length chunks
+        chunks = splitIntoChunks (size*2) text
+        
+
 bestKeySizesWithScore :: B.ByteString -> [(Int, Float)]
-bestKeySizesWithScore text = take 5
-                  $ sortOn snd 
+bestKeySizesWithScore text = take 10
+                  . sortOn snd 
                   $ sizesAndScores
     where
         sizesAndScores :: [(Int, Float)]
         sizesAndScores = mapWithOrig hammingAtKeySize
                        $ keySizesToTest
         
-        hammingAtKeySize  = (flip normalizedHammingSizeOffset) text
-        keySizesToTest = [2..40]
+        hammingAtKeySize  = (flip avgNormedHammingSizeOffset) text
+        keySizesToTest = [2..(min 40 $ (B.length text) `div` 2)]
 
 bestKeySizes :: B.ByteString -> [Int]
 bestKeySizes = map fst . bestKeySizesWithScore
 
-
-splitIntoChunks :: Int -> B.ByteString -> [B.ByteString]
-splitIntoChunks n text 
-    | text == B.empty = []
-    | B.length text < n = []
-    | otherwise = front : splitIntoChunks n rest
-    where (front, rest) = B.splitAt n text
 
 solveBlocks :: [B.ByteString] -> [Word8]
 solveBlocks = map (Lib.charToWord8 . Lib.mostLikelyXorKey)
@@ -105,16 +113,33 @@ filename = "data/6.txt"
 loadEncryptedFile :: IO B.ByteString
 loadEncryptedFile = do
     contents <- B.readFile filename
-    return $ Lib.base64ToBytes 
-           . BC.concat 
-           . BC.lines $ contents 
+    return $ Lib.base64ToBytes contents
 
+testFindingKeySize :: IO ()
+testFindingKeySize = do
+    let plainText = Lib.stringToBytes "\
+        \Burning 'em, if you ain't quick and nimble\n\
+        \I go crazy when I hear a cymbal"
+        expectedCipherText1 = Lib.stringToBytes "\
+        \0b3637272a2b2e63622c2e69692a23693a2a3c\
+        \6324202d623d63343c2a26226324272765272a\
+        \282b2f20430a652e2c652a3124333a653e2b20\
+        \27630c692b20283165286326302e27282f"
+
+        expectedCipherText2 = Lib.stringToBytes "\
+        \637272a2b2e63622c2e69692a23693a2a3c\
+        \6324202d623d63343c2a26226324272765272a\
+        \282b2f20430a652e2c652a3124333a653e2b20\
+        \27630c692b20283165286326302e27282f"
+    putStr "This list should start with 3 -->"
+    print $ bestKeySizesWithScore expectedCipherText1
+    print $ bestKeySizesWithScore expectedCipherText2
 
 testDecryption :: IO ()
 testDecryption = do
     cipherText <- loadEncryptedFile
-    let results = bestDecryptions cipherText
-    print results    
+    let result = head $ bestDecryptions cipherText
+    print result    
 
 main :: IO ()
 main = do
@@ -123,4 +148,5 @@ main = do
     putSep
     testHammingDistanceKeySizeOffset
     putSep 
+    testFindingKeySize
     testDecryption
