@@ -29,12 +29,12 @@ version :: Version
 version = Version [0,1,0,0] []
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 
-bindir     = "/Users/davidgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/9de3b1b5f16d8439708142d9f740caf878d18909917e3846f85c399acf68ce24/8.6.5/bin"
-libdir     = "/Users/davidgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/9de3b1b5f16d8439708142d9f740caf878d18909917e3846f85c399acf68ce24/8.6.5/lib/x86_64-osx-ghc-8.6.5/cryptopals-0.1.0.0-EPo3e4kHukH2ugVlHACEog-cryptopals-exe"
-dynlibdir  = "/Users/davidgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/9de3b1b5f16d8439708142d9f740caf878d18909917e3846f85c399acf68ce24/8.6.5/lib/x86_64-osx-ghc-8.6.5"
-datadir    = "/Users/davidgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/9de3b1b5f16d8439708142d9f740caf878d18909917e3846f85c399acf68ce24/8.6.5/share/x86_64-osx-ghc-8.6.5/cryptopals-0.1.0.0"
-libexecdir = "/Users/davidgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/9de3b1b5f16d8439708142d9f740caf878d18909917e3846f85c399acf68ce24/8.6.5/libexec/x86_64-osx-ghc-8.6.5/cryptopals-0.1.0.0"
-sysconfdir = "/Users/davidgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/9de3b1b5f16d8439708142d9f740caf878d18909917e3846f85c399acf68ce24/8.6.5/etc"
+bindir     = "/Users/dgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/88004b73fdc3a9b0cfc449cd46ca86406a313b1ab28c05c0e99b98dc16974176/8.6.5/bin"
+libdir     = "/Users/dgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/88004b73fdc3a9b0cfc449cd46ca86406a313b1ab28c05c0e99b98dc16974176/8.6.5/lib/x86_64-osx-ghc-8.6.5/cryptopals-0.1.0.0-EPo3e4kHukH2ugVlHACEog-cryptopals-exe"
+dynlibdir  = "/Users/dgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/88004b73fdc3a9b0cfc449cd46ca86406a313b1ab28c05c0e99b98dc16974176/8.6.5/lib/x86_64-osx-ghc-8.6.5"
+datadir    = "/Users/dgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/88004b73fdc3a9b0cfc449cd46ca86406a313b1ab28c05c0e99b98dc16974176/8.6.5/share/x86_64-osx-ghc-8.6.5/cryptopals-0.1.0.0"
+libexecdir = "/Users/dgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/88004b73fdc3a9b0cfc449cd46ca86406a313b1ab28c05c0e99b98dc16974176/8.6.5/libexec/x86_64-osx-ghc-8.6.5/cryptopals-0.1.0.0"
+sysconfdir = "/Users/dgoldberg/Code/cryptopals/.stack-work/install/x86_64-osx/88004b73fdc3a9b0cfc449cd46ca86406a313b1ab28c05c0e99b98dc16974176/8.6.5/etc"
 
 getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
 getBinDir = catchIO (getEnv "cryptopals_bindir") (\_ -> return bindir)
