@@ -12,9 +12,12 @@ module Lib (
     xorWithLetter,
     sortedLetterScores,
     repeatingXOR,
-    mostLikelyXorKey
+    mostLikelyXorKey,
+    initAES128,
+    ecbDecryption,
 ) where
 
+import Crypto.Cipher
 import Data.Bits(xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -182,3 +185,11 @@ sortedLetterScores text = sortOn snd' lettersWithScores
 mostLikelyXorKey :: B.ByteString -> Char
 mostLikelyXorKey text = key
     where (key, _, _) = head $ sortedLetterScores text
+
+
+-- AES tools
+initAES128 :: B.ByteString -> AES128
+initAES128 = either (error . show) cipherInit . makeKey
+
+ecbDecryption :: AES128 -> B.ByteString -> B.ByteString
+ecbDecryption ctx cipherText = ecbDecrypt ctx cipherText
