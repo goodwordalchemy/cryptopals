@@ -15,7 +15,7 @@ import qualified Lib
 
 testEcbEncrypt :: IO ()
 testEcbEncrypt = do
-    let aes = Lib.initAES128 $ BC.pack "YELLOW SUBMARINE" 
+    let aes = Lib.initAES128 $ Lib.stringToBytes "YELLOW SUBMARINE" 
         message = Lib.stringToBytes "This is my terrific message!1234"
         encrypted = Lib.ecbEncryption aes message
         decrypted = Lib.ecbDecryption aes encrypted
@@ -30,10 +30,11 @@ testEcbEncrypt = do
 
 testCbc :: IO ()
 testCbc = do
-    let aes = Lib.initAES128 . BC.pack $ replicate 16 '\x00'
+    let aes = Lib.initAES128 $ Lib.stringToBytes "YELLOW SUBMARINE"
+        iv = BC.pack $ replicate 16 '\x00'
         message = Lib.stringToBytes "AAAAAAAAAAAAAAAAABBBBBBBBBBBBBBB"
-        encrypted = Lib.cbcEncryption aes message
-        decrypted = Lib.cbcDecryption aes encrypted
+        encrypted = Lib.cbcEncryption aes iv message
+        decrypted = Lib.cbcDecryption aes iv encrypted
     putStrLn "============================"
     putStrLn "TESTING: Cbc mode functions"
     putStrLn "These two strings should be equal:"
@@ -46,3 +47,4 @@ testCbc = do
 main :: IO ()
 main = do
     testEcbEncrypt
+    testCbc

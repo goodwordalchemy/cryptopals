@@ -20,6 +20,8 @@ module Lib (
     initAES128,
     ecbDecryption,
     ecbEncryption,
+    cbcDecryption,
+    cbcEncryption,
 ) where
 
 import Crypto.Cipher
@@ -240,16 +242,35 @@ cbcEncryption ctx iv text
     where chunks = splitIntoChunks 16 text
           encryptChunk prev cur = B.append prev 
                                 $ cbcEncryptionStep ctx prev cur
+---- <<<<<<<<,
+-- type PlainAndCipherTexts = (B.ByteString, B.ByteString)
 
-cbcDecryptionStep :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
-cbcDecryptionStep ctx iv text = ecbDecryption ctx block
-    where block = fixedXOR iv decrypted
-          decrypted = ecbDecryption aes text
+-- cbcDecryptionFoldFunc 
+--     :: AES128
+--     -> (PlainAndCipherTexts -> B.ByteString -> PlainAndCipherTexts)
+-- cbcDecryptionFoldFunc ctx = (\prev curCipherText ->
+--     let (prevPlainText, prevCipherText) = prev
+--         rawCurPlainText = ecbDecryption ctx curCipherText
+--         curPlainText = fixedXOR rawCurPlainText prevCipherText
+--         plainTextSoFar = B.append prevPlainText curPlainText
+--     in (plainTextSoFar, curCipherText))
+
+
+-- cbcDecryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+-- cbcDecryption ctx iv text
+--     | B.length iv /= 16 = error "Initialization vector must have length 16"
+--     | otherwise = fst $ foldl decryptChunk initAccum chunks
+--     where chunks = splitIntoChunks 16 text
+--           decryptChunk = cbcDecryptionFoldFunc ctx
+--           initAccum = (iv, chunks !! 0)
+---- >>>>>>>>>>
 
 cbcDecryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
-cbcDecryption ctx iv text
+cbcDecryption ctx iv cipherText
     | B.length iv /= 16 = error "Initialization vector must have length 16"
-    | otherwise = foldl decryptChunk iv chunks
-    where chunks = splitIntoChunks 16 text
-          decryptChunk prev cur = B.append prev 
-                                $ cbcDecryptionStep ctx prev cur
+    | otherwise = B.concat plainTexts
+    where 
+        plainTexts = zipWith fixedXOR decrypteds
+                   $ iv : chunks
+        decrypteds = map (ecbDecryption ctx) chunks
+        chunks = splitIntoChunks 16 cipherText
