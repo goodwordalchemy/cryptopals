@@ -144,7 +144,7 @@
 #endif /* MIN_TOOL_VERSION_runghc */
 
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "cryptopals-0.1.0.0-EPo3e4kHukH2ugVlHACEog-cryptopals-exe"
+#define CURRENT_COMPONENT_ID "cryptopals-0.1.0.0-9eH5Fb0RD9MBFnDnhF39D6-cryptopals-exe"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"
