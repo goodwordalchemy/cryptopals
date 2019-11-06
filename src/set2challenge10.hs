@@ -3,15 +3,6 @@ import qualified Data.ByteString.Char8 as BC
 
 import qualified Lib
 
--- 2. to cbcEncryption,  
---      break the plaintext into 16 byte chunks
---      have an initialization vector
---      xor IV with first chunk of plaintext.  
---      ecb encrypt it
---      The result from the previous step is iv for the next one.  repeat with next block untill the end.
--- 3. test encryption by encrypting and then decrypting something
--- 4. test decryption by decrypting the file.
-
 
 testEcbEncrypt :: IO ()
 testEcbEncrypt = do
@@ -42,9 +33,32 @@ testCbc = do
     BC.putStrLn message
     putStr "Decrypted: ==>"
     BC.putStrLn decrypted
+    putStr "Just for fun, here's the ciphertext ==>"
+    BC.putStrLn encrypted
+
+filename :: String
+filename = "data/10.txt"
+
+loadEncryptedFile :: IO BC.ByteString
+loadEncryptedFile = do
+    contents <- BC.readFile filename
+    return $ Lib.base64ToBytes contents
+
+testLargeFile :: IO ()
+testLargeFile = do
+    putStrLn "============================"
+    putStrLn "TESTING: decrypting a large file"
+
+    cipherText <- loadEncryptedFile
+    let aes = Lib.initAES128 $ Lib.stringToBytes "YELLOW SUBMARINE"
+        iv = BC.pack $ replicate 16 '\x00'
+        plainText = Lib.cbcDecryption aes iv cipherText
+    
+    BC.putStrLn plainText
     
 
 main :: IO ()
 main = do
     testEcbEncrypt
     testCbc
+    testLargeFile

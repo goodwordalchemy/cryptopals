@@ -210,7 +210,9 @@ padToLength text size = B.append text padding
           diff = size - B.length text
 
 padToMultiple :: B.ByteString -> Int -> B.ByteString
-padToMultiple text ofM = padToLength text lengthToPad
+padToMultiple text ofM 
+    | B.length text == ofM = text
+    | otherwise = padToLength text lengthToPad
     where 
         lengthToPad = if floor == textLength 
                       then textLength 
@@ -229,21 +231,6 @@ ecbDecryption ctx cipherText = ecbDecrypt ctx cipherText
 
 ecbEncryption :: AES128 -> B.ByteString -> B.ByteString
 ecbEncryption ctx plainText = ecbEncrypt ctx plainText
-
--- <<<<<<<<<<<<<
--- cbcEncryptionStep :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
--- cbcEncryptionStep ctx iv text = ecbEncryption ctx block
---     where block = fixedXOR iv paddedText
---           paddedText = padToMultiple text 16
-    
--- cbcEncryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
--- cbcEncryption ctx iv text
---     | B.length iv /= 16 = error "Initialization vector must have length 16"
---     | otherwise = foldl encryptChunk iv chunks
---     where chunks = splitIntoChunks 16 text
---           encryptChunk prev cur = B.append prev 
---                                 $ cbcEncryptionStep ctx prev cur
--- >>>>>>>>>>>>>
 
 cbcEncryptionStep 
     :: AES128 
