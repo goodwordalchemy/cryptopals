@@ -240,6 +240,7 @@ detectECB text = any id
                $ possibleStartPoints
     where possibleStartPoints = [0..lastStartPoint]
           lastStartPoint = (B.length text) - (2*16)
+
 initAES128 :: B.ByteString -> AES128
 initAES128 = either (error . show) cipherInit . makeKey
 
