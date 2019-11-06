@@ -1,6 +1,6 @@
 import Test.HUnit
 
-import Challenge1(challenge1)
+import qualified Challenge1 as C1
 import qualified Challenge2 as C2
 import qualified Challenge3 as C3
 
@@ -8,8 +8,8 @@ import qualified Challenge3 as C3
 challenge1Test = TestCase 
                $ assertEqual 
                     "Challenge 1: Convert hex to base64" 
-                    (challenge1 hexInput) 
-                    base64Output 
+                    C1.challenge1
+                    C1.base64Output 
     where
         hexInput :: String
         hexInput = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"

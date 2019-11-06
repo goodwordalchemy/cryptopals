@@ -1,5 +1,5 @@
-module Challenge1  (
-    challenge1
+module Challenge1  ( challenge1
+                   , base64Output
 ) where
 
 import Lib
@@ -8,8 +8,8 @@ hexToBase64 :: String -> String
 hexToBase64 = 
     Lib.bytesToString . Lib.bytesToBase64 . Lib.hexToBytes . Lib.stringToBytes 
 
-challenge1 :: String -> String
-challenge1 = hexToBase64
+challenge1 :: String
+challenge1 = hexToBase64 hexInput
     
 hexInput :: String
 hexInput = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
@@ -24,4 +24,4 @@ main = do
     putStrLn base64Output
 
     putStr "result: "
-    putStrLn $ challenge1 hexInput
+    putStrLn $ challenge1
