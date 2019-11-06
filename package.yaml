@@ -30,6 +30,7 @@ dependencies:
 - containers >= 0.6.0.1
 - cryptocipher >= 0.6.2
 - random >= 1.1
+- HUnit
 
 library:
   source-dirs: src
@@ -48,11 +49,10 @@ executables:
 tests:
   cryptopals-test:
     main:                Spec.hs
-    source-dirs:         test
+    source-dirs:         test, src
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - cryptopals
-    - HUnit

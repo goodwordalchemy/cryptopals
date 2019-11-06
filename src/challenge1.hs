@@ -1,4 +1,6 @@
-module Challenge_1  () where
+module Challenge1  (
+    challenge1
+) where
 
 import Lib
 

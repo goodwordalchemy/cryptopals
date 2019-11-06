@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5a54a79a691f8550f5d4961ca5614e5cfb34c5da0604d80e7a1272cc63996531
+-- hash: 2275d81eecca606ca3531c0505ef4b3766cbea9bbf5917fa0e2128c05c577eb4
 
 name:           cryptopals
 version:        0.1.0.0
@@ -33,7 +33,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , base >=4.7 && <5
     , base16-bytestring >=0.1.1.6
     , base64-bytestring >=1.0.0.2
     , bytestring >=0.10.8.2
@@ -51,7 +52,8 @@ executable cryptopals-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , base >=4.7 && <5
     , base16-bytestring >=0.1.1.6
     , base64-bytestring >=1.0.0.2
     , bytestring >=0.10.8.2
@@ -68,7 +70,7 @@ test-suite cryptopals-test
   other-modules:
       Paths_cryptopals
   hs-source-dirs:
-      test
+      test, src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit
