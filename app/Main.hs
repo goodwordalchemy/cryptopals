@@ -3,4 +3,5 @@ module Main where
 import Lib
 
 main :: IO ()
-main = someFunc
+main = do
+    putStrLn "There is no main executable"

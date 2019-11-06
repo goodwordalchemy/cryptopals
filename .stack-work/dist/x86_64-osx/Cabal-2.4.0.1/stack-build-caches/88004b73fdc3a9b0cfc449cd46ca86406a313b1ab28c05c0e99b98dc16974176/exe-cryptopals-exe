@@ -1,11 +1,11 @@
 /Users/dgoldberg/Code/cryptopals/cryptopals.cabal:
-  hash: 37536251d8b5738032b6ecb0e653be7b285e3dd14e24e2318bffdbe7cce6ddc3
-  size: 1855
-  modtime: 1573067357
+  hash: 028259c0cabcc31bba342cddfbed8d884414bc196a4c737da2338d2b2d993ded
+  size: 2106
+  modtime: 1573080373
 /Users/dgoldberg/Code/cryptopals/app/Main.hs:
-  hash: 76b6ff5a6856b39392800f564d81a7fd1496c8e13ac7941036946f0b5757272b
-  size: 61
-  modtime: 1572878082
+  hash: bdf946b41b5b5c9f2c0f445d1af549b4c12d1cd0821e4850a1474a653d57d14c
+  size: 98
+  modtime: 1573080439
 /Users/dgoldberg/Code/cryptopals/ChangeLog.md:
   hash: 4ed81af05626d16ef4d77847775c480455e127552a0c519084bc87bf41c913fb
   size: 50
@@ -15,6 +15,6 @@
   size: 13
   modtime: 1572878082
 /Users/dgoldberg/Code/cryptopals/package.yaml:
-  hash: 017ea1014932e711c6fb6fbc78261466c8c7459bb07ddeb10c4013cf870aa50d
-  size: 1253
-  modtime: 1572878082
+  hash: 0914a7f241a97c4d13706eb9cf193f1860b1f923b6134dcdf376ec149623d9ce
+  size: 1432
+  modtime: 1573080369

@@ -188,10 +188,10 @@
 #endif /* MIN_TOOL_VERSION_runghc */
 
 #ifndef CURRENT_PACKAGE_KEY
-#define CURRENT_PACKAGE_KEY "cryptopals-0.1.0.0-CgOCYUNv5qCCl9v9RUdIBE"
+#define CURRENT_PACKAGE_KEY "cryptopals-0.1.0.0-Br2CRrnMXjYHouazNcbf0U"
 #endif /* CURRENT_PACKAGE_KEY */
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "cryptopals-0.1.0.0-CgOCYUNv5qCCl9v9RUdIBE"
+#define CURRENT_COMPONENT_ID "cryptopals-0.1.0.0-Br2CRrnMXjYHouazNcbf0U"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"
