@@ -1,4 +1,6 @@
 module Lib (
+    mapWithOrig,
+    splitIntoChunks,
     base64ToBytes,
     bytesToBase64,
     hexToBytes,
@@ -13,8 +15,11 @@ module Lib (
     sortedLetterScores,
     repeatingXOR,
     mostLikelyXorKey,
+    padToLength,
+    padToMultiple,
     initAES128,
     ecbDecryption,
+    ecbEncryption,
 ) where
 
 import Crypto.Cipher
@@ -31,6 +36,16 @@ import qualified Data.Text.Encoding as TE
 import Data.Tuple(snd)
 import Data.Word(Word8)
 import Debug.Trace
+
+mapWithOrig :: (a -> b) -> [a] -> [(a, b)]
+mapWithOrig func = map (\a -> (a, func a)) 
+
+splitIntoChunks :: Int -> B.ByteString -> [B.ByteString]
+splitIntoChunks n text 
+    | text == B.empty = []
+    | B.length text < n = []
+    | otherwise = front : splitIntoChunks n rest
+    where (front, rest) = B.splitAt n text
 
 -- Base64 functions
 base64ToBytes :: B.ByteString -> B.ByteString
@@ -186,6 +201,22 @@ mostLikelyXorKey :: B.ByteString -> Char
 mostLikelyXorKey text = key
     where (key, _, _) = head $ sortedLetterScores text
 
+-- Padding tools
+padToLength :: B.ByteString -> Int -> B.ByteString
+padToLength text size = B.append text padding
+    where padding = B.replicate diff (fromIntegral diff)
+          diff = size - B.length text
+
+padToMultiple :: B.ByteString -> Int -> B.ByteString
+padToMultiple text ofM = padToLength text lengthToPad
+    where 
+        lengthToPad = if floor == textLength 
+                      then textLength 
+                      else (q+1) * ofM
+        floor = q * ofM
+        q = textLength `div` ofM
+        textLength = B.length text
+
 
 -- AES tools
 initAES128 :: B.ByteString -> AES128
@@ -193,3 +224,32 @@ initAES128 = either (error . show) cipherInit . makeKey
 
 ecbDecryption :: AES128 -> B.ByteString -> B.ByteString
 ecbDecryption ctx cipherText = ecbDecrypt ctx cipherText
+
+ecbEncryption :: AES128 -> B.ByteString -> B.ByteString
+ecbEncryption ctx plainText = ecbEncrypt ctx plainText
+
+cbcEncryptionStep :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+cbcEncryptionStep ctx iv text = ecbEncryption ctx block
+    where block = fixedXOR iv paddedText
+          paddedText = padToMultiple text 16
+    
+cbcEncryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+cbcEncryption ctx iv text
+    | B.length iv /= 16 = error "Initialization vector must have length 16"
+    | otherwise = foldl encryptChunk iv chunks
+    where chunks = splitIntoChunks 16 text
+          encryptChunk prev cur = B.append prev 
+                                $ cbcEncryptionStep ctx prev cur
+
+cbcDecryptionStep :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+cbcDecryptionStep ctx iv text = ecbDecryption ctx block
+    where block = fixedXOR iv decrypted
+          decrypted = ecbDecryption aes text
+
+cbcDecryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+cbcDecryption ctx iv text
+    | B.length iv /= 16 = error "Initialization vector must have length 16"
+    | otherwise = foldl decryptChunk iv chunks
+    where chunks = splitIntoChunks 16 text
+          decryptChunk prev cur = B.append prev 
+                                $ cbcDecryptionStep ctx prev cur

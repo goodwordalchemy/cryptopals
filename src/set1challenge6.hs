@@ -8,16 +8,6 @@ import Debug.Trace
 
 import Lib
 
-mapWithOrig :: (a -> b) -> [a] -> [(a, b)]
-mapWithOrig func = map (\a -> (a, func a)) 
-
-splitIntoChunks :: Int -> B.ByteString -> [B.ByteString]
-splitIntoChunks n text 
-    | text == B.empty = []
-    | B.length text < n = []
-    | otherwise = front : splitIntoChunks n rest
-    where (front, rest) = B.splitAt n text
-
 hamming :: B.ByteString -> B.ByteString -> Int
 hamming a b = B.foldl numSetBits 0 $ Lib.fixedXOR a b
     where 
