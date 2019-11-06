@@ -17,6 +17,7 @@ module Lib (
     mostLikelyXorKey,
     padToLength,
     padToMultiple,
+    detectECB,
     initAES128,
     ecbDecryption,
     ecbEncryption,
@@ -48,6 +49,16 @@ splitIntoChunks n text
     | B.length text < n = []
     | otherwise = front : splitIntoChunks n rest
     where (front, rest) = B.splitAt n text
+
+isSubstring :: B.ByteString -> B.ByteString -> Bool
+isSubstring needle haystack = B.length match > 0
+    where (_, match) = B.breakSubstring needle haystack
+
+subStringAtIndexIsRepeated :: B.ByteString -> Int -> Bool
+subStringAtIndexIsRepeated text idx= isSubstring front back
+    where (front, back) = B.splitAt 16 usableText
+          (_, usableText) = B.splitAt idx text
+
 
 -- Base64 functions
 base64ToBytes :: B.ByteString -> B.ByteString
@@ -223,6 +234,12 @@ padToMultiple text ofM
 
 
 -- AES tools
+detectECB :: B.ByteString -> Bool
+detectECB text = any id
+               $ map (subStringAtIndexIsRepeated text) 
+               $ possibleStartPoints
+    where possibleStartPoints = [0..lastStartPoint]
+          lastStartPoint = (B.length text) - (2*16)
 initAES128 :: B.ByteString -> AES128
 initAES128 = either (error . show) cipherInit . makeKey
 
@@ -230,7 +247,8 @@ ecbDecryption :: AES128 -> B.ByteString -> B.ByteString
 ecbDecryption ctx cipherText = ecbDecrypt ctx cipherText
 
 ecbEncryption :: AES128 -> B.ByteString -> B.ByteString
-ecbEncryption ctx plainText = ecbEncrypt ctx plainText
+ecbEncryption ctx plainText = ecbEncrypt ctx paddedPlainText
+    where paddedPlainText = padToMultiple plainText 16
 
 cbcEncryptionStep 
     :: AES128 
