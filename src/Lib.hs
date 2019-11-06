@@ -230,40 +230,43 @@ ecbDecryption ctx cipherText = ecbDecrypt ctx cipherText
 ecbEncryption :: AES128 -> B.ByteString -> B.ByteString
 ecbEncryption ctx plainText = ecbEncrypt ctx plainText
 
-cbcEncryptionStep :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
-cbcEncryptionStep ctx iv text = ecbEncryption ctx block
-    where block = fixedXOR iv paddedText
-          paddedText = padToMultiple text 16
+-- <<<<<<<<<<<<<
+-- cbcEncryptionStep :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+-- cbcEncryptionStep ctx iv text = ecbEncryption ctx block
+--     where block = fixedXOR iv paddedText
+--           paddedText = padToMultiple text 16
     
+-- cbcEncryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
+-- cbcEncryption ctx iv text
+--     | B.length iv /= 16 = error "Initialization vector must have length 16"
+--     | otherwise = foldl encryptChunk iv chunks
+--     where chunks = splitIntoChunks 16 text
+--           encryptChunk prev cur = B.append prev 
+--                                 $ cbcEncryptionStep ctx prev cur
+-- >>>>>>>>>>>>>
+
+cbcEncryptionStep 
+    :: AES128 
+    -> B.ByteString 
+    -> B.ByteString 
+    -> B.ByteString
+    -> B.ByteString
+cbcEncryptionStep ctx prevCipher plainText acc
+    | plainText == B.empty = acc
+    | otherwise = cbcEncryptionStep ctx curCipher nextPlain cipherSoFar
+    where
+        cipherSoFar = B.append acc curCipher
+
+        curCipher = ecbEncryption ctx xored
+        xored = fixedXOR prevCipher curPlainPadded
+        curPlainPadded = padToMultiple curPlain 16
+        
+        (curPlain, nextPlain) = B.splitAt 16 plainText
+
 cbcEncryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
 cbcEncryption ctx iv text
     | B.length iv /= 16 = error "Initialization vector must have length 16"
-    | otherwise = foldl encryptChunk iv chunks
-    where chunks = splitIntoChunks 16 text
-          encryptChunk prev cur = B.append prev 
-                                $ cbcEncryptionStep ctx prev cur
----- <<<<<<<<,
--- type PlainAndCipherTexts = (B.ByteString, B.ByteString)
-
--- cbcDecryptionFoldFunc 
---     :: AES128
---     -> (PlainAndCipherTexts -> B.ByteString -> PlainAndCipherTexts)
--- cbcDecryptionFoldFunc ctx = (\prev curCipherText ->
---     let (prevPlainText, prevCipherText) = prev
---         rawCurPlainText = ecbDecryption ctx curCipherText
---         curPlainText = fixedXOR rawCurPlainText prevCipherText
---         plainTextSoFar = B.append prevPlainText curPlainText
---     in (plainTextSoFar, curCipherText))
-
-
--- cbcDecryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
--- cbcDecryption ctx iv text
---     | B.length iv /= 16 = error "Initialization vector must have length 16"
---     | otherwise = fst $ foldl decryptChunk initAccum chunks
---     where chunks = splitIntoChunks 16 text
---           decryptChunk = cbcDecryptionFoldFunc ctx
---           initAccum = (iv, chunks !! 0)
----- >>>>>>>>>>
+    | otherwise = cbcEncryptionStep ctx iv text B.empty
 
 cbcDecryption :: AES128 -> B.ByteString -> B.ByteString -> B.ByteString
 cbcDecryption ctx iv cipherText
