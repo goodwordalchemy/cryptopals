@@ -1,6 +1,8 @@
 import Test.HUnit
 
 import Challenge1(challenge1)
+import qualified Challenge2 as C2
+import qualified Challenge3 as C3
 
 
 challenge1Test = TestCase 
@@ -15,7 +17,22 @@ challenge1Test = TestCase
         base64Output :: String
         base64Output = "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
 
-testList = TestList [TestLabel "Challenge 1" challenge1Test
+challenge2Test = TestCase 
+               $ assertEqual 
+                    "Challenge 2: Fixed XOR"
+                    C2.challenge2 
+                    C2.expectedCipherText
+
+challenge3Test = TestCase
+                $ assertEqual
+                    "Single-byte XOR cipher"
+                    C3.challenge3
+                    'X'
+                    
+
+testList = TestList [ challenge1Test
+                    , challenge2Test
+                    , challenge3Test
                     ]
 main :: IO ()
 main = do
