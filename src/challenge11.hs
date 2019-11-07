@@ -7,11 +7,6 @@ import BlockOracle
 import qualified Lib
 
 
-guessEncryptionMode :: B.ByteString -> EncryptionMode
-guessEncryptionMode cipherText = if Lib.detectECB cipherText
-                                 then ECB
-                                 else CBC
-
 {- 
 The goal is to find a length where no matter what padding comes before or
 after, there will always be at least two identical 16 byte blocks of text. 

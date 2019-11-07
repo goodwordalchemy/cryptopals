@@ -13,6 +13,12 @@ import qualified Lib
 type BLetterStream = [Word8]
 data EncryptionMode = ECB | CBC deriving (Show, Eq)
 
+guessEncryptionMode :: B.ByteString -> EncryptionMode
+guessEncryptionMode cipherText = if Lib.detectECB cipherText
+                                 then ECB
+                                 else CBC
+
+
 getRandomLetterStream :: StdGen -> (BLetterStream, StdGen)
 getRandomLetterStream g = (randomRs (0, 255) g, g)
 

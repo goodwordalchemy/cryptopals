@@ -13,15 +13,15 @@ type Oracle = B.ByteString -> IO B.ByteString
 mostCommon :: Ord a => [a] -> a
 mostCommon = snd . maximum . map (\xs -> (length xs, head xs)) . group . sort
 
-cipherText :: B.ByteString
-cipherText = Lib.base64ToBytes . Lib.stringToBytes $ "\
+unkown :: B.ByteString
+unkown = Lib.base64ToBytes . Lib.stringToBytes $ "\
 \Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
 \aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
 \dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
 \YnkK"
 
 appendCipherText :: B.ByteString -> B.ByteString
-appendCipherText knownPlainText = B.append knownPlainText cipherText
+appendCipherText knownPlainText = B.append knownPlainText unknown
 
 nBytePlainText :: Int -> B.ByteString
 nBytePlainText n = BC.replicate n 'A'
@@ -72,6 +72,18 @@ detectBlockSize oracle = do
     blockSize <- detectBlockSizeHelper oracle 2 initialCipherSize
     return blockSize
 
+byteAtAtime :: Oracle -> IO B.ByteString
+byteAtATime oracle = 
+
+decryptUnknown :: Oracle -> IO B.ByteString
+decryptUnknown oracle = do
+    blockSize <- detectBlockSize oracle
+    let mode = guessEncryptionMode . oracle $ nBytePayload (3*blockSize)
+    if mode == CBC
+        then error "Can't decrypt cbc mode yet"
+        else byteAtATime oracle
+
+----
 
 testDetectBlockSize :: IO ()
 testDetectBlockSize = do
