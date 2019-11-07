@@ -1,3 +1,5 @@
+module Challenge4(challenge4) where
+
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.List(sortOn, map)
@@ -25,6 +27,12 @@ loadCandidates = do
     contents <- BC.readFile fileName
     return $ map Lib.hexToBytes $ BC.lines contents
     
+challenge4 :: IO Char
+challenge4 = do
+    candidates <- loadCandidates
+    let (bestLetter, _, _) = head $ mostLikelyPlaintexts candidates
+    return bestLetter
+
 main = do
     candidates <- loadCandidates
     let winners = mostLikelyPlaintexts candidates
