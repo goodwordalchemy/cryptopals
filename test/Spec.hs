@@ -4,6 +4,7 @@ import qualified Challenge1 as C1
 import qualified Challenge2 as C2
 import qualified Challenge3 as C3
 import qualified Challenge4 as C4
+import qualified Challenge5 as C5
 
 
 challenge1Test = TestCase 
@@ -26,6 +27,11 @@ challenge4Test = TestCase
                    c4Result <- C4.challenge4
                    assertEqual "Detect single-character XOR" c4Result '5'
                     
+challenge5Test = TestCase 
+               $ assertEqual 
+                    "Challenge 5: Implement repeating-key XOR"
+                    C5.challenge5
+                    C5.expectedCipherText
                     
 
 testList = TestList [ challenge1Test

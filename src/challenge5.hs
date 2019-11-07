@@ -1,3 +1,5 @@
+module Challenge5(challenge5, expectedCipherText) where
+
 import Lib
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -17,6 +19,8 @@ expectedCipherText = Lib.stringToBytes "\
 key :: B.ByteString
 key = Lib.stringToBytes "ICE"
 
+challenge5 :: B.ByteString
+challenge5 = Lib.bytesToHex $ Lib.repeatingXOR plainText key
 
 main :: IO ()
 main = do
@@ -25,4 +29,4 @@ main = do
     BC.putStrLn expectedCipherText
 
     putStr "result: "
-    BC.putStrLn $ Lib.bytesToHex $ Lib.repeatingXOR plainText key
+    BC.putStrLn $ challenge5
