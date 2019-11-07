@@ -1,4 +1,4 @@
-module Challenge12() where
+module Challenge12(challenge12) where
 
 import Data.List
 import qualified Data.ByteString as B
@@ -13,7 +13,6 @@ import qualified Lib
 type Oracle = B.ByteString -> B.ByteString
 
 unknown :: B.ByteString
--- unknown = Lib.stringToBytes "12345678900987654321"
 unknown = Lib.base64ToBytes . Lib.stringToBytes $ "\
 \Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
 \aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
@@ -51,7 +50,7 @@ chunks16 :: B.ByteString -> [B.ByteString]
 chunks16 = Lib.splitIntoChunks 16
 
 byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8 -> Word8
-byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte = (trace $ "bTMMP==> " ++ show guessByte ++ ", payload:" ++ show payload ++ ", guess:" ++ show (payload `B.snoc` guessByte)) $
+byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte = 
     if guess == toMatch
         then guessByte
         else if guessByte == 255 
@@ -71,8 +70,7 @@ byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte = (trace $ 
 
 
 decryptNextByte :: Oracle -> B.ByteString -> Word8
-decryptNextByte oracle soFar = (trace $ "payload:" ++ show payload ++  ", soFar:" ++ show soFar ++ ", byte:" ++ show byte ++ ", padLength:" ++ show padLength) $
-    byte
+decryptNextByte oracle soFar = byte
     where 
         soFarLength = B.length soFar
         blockNum = soFarLength `div` 16
@@ -82,10 +80,10 @@ decryptNextByte oracle soFar = (trace $ "payload:" ++ show payload ++  ", soFar:
         
 
 byteAtATimeHelper :: Oracle -> B.ByteString -> Int-> B.ByteString
-byteAtATimeHelper oracle decryptedSoFar stopLength = (trace $ "BAATHelper==> decrypted:" ++ show decrypted ++ ", stopLength:" ++ show stopLength) $
+byteAtATimeHelper oracle decryptedSoFar stopLength =
     if B.length decrypted >= stopLength 
-       then (trace "BAATHelper==>done") $ decrypted
-       else (trace "BAATHelper==>doing recursive call...") $ byteAtATimeHelper oracle decrypted stopLength
+       then decrypted
+       else byteAtATimeHelper oracle decrypted stopLength
     where
         decrypted = decryptedSoFar `B.snoc` nextByte
         nextByte = decryptNextByte oracle decryptedSoFar
@@ -104,7 +102,14 @@ decryptUnknown oracle = case mode of
     where mode = guessEncryptionMode . oracle $ nBytePayload (3*blockSize)
           blockSize = detectBlockSize oracle
 
+
 --- TESTS ---
+
+challenge12 :: IO [String]
+challenge12 = do
+    oracle <- getOracle
+    let result = decryptUnknown oracle
+    return $ take 2 $ words $ Lib.bytesToString result
 
 getOracle :: IO Oracle
 getOracle = do
