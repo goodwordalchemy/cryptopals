@@ -84,17 +84,19 @@ detectBlockSize oracle = detectBlockSizeHelper oracle 2 initialCipherSize
 chunks16 :: B.ByteString -> [B.ByteString]
 chunks16 = Lib.splitIntoChunks 16
 
-byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> Int -> Word8 -> Word8
-byteThatMakesMatchingPayload oracle payload blockNum guessByte =
+byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8 -> Word8
+byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte = (trace $ "bTMMP==> " ++ show guessByte ++ ", payload:" ++ show payload ++ ", guess:" ++ show (payload `B.snoc` guessByte)) $
     if guess == toMatch
         then guessByte
-        else byteThatMakesMatchingPayload oracle payload blockNum nextByte
+        else if guessByte == 255 
+            then error $ "didn't find a matching byte for payloadChunk:" ++ show toMatch
+            else byteThatMakesMatchingPayload oracle payload soFar blockNum nextByte
 
     where
         nextByte = guessByte + 1
         toMatchOracleOut = oracle payload
         toMatch = blockICareAbout toMatchOracleOut
-        guessOracleOut = oracle $ payload `B.snoc` guessByte
+        guessOracleOut = oracle $ payload `B.append` soFar `B.snoc` guessByte
         guess = blockICareAbout guessOracleOut
 
         blockICareAbout :: B.ByteString -> B.ByteString
@@ -109,15 +111,15 @@ decryptNextByte oracle soFar = (trace $ "payload:" ++ show payload ++  ", soFar:
         soFarLength = B.length soFar
         blockNum = soFarLength `div` 16
         padLength = 15 - (soFarLength `mod` 16) + (blockNum * 16)
-        payload = (nBytePayload padLength) `B.append` soFar
-        byte = byteThatMakesMatchingPayload oracle payload blockNum 0
+        payload = nBytePayload padLength 
+        byte = byteThatMakesMatchingPayload oracle payload soFar blockNum 0
         
 
 byteAtATimeHelper :: Oracle -> B.ByteString -> Int-> B.ByteString
-byteAtATimeHelper oracle decryptedSoFar stopLength = 
-    if B.length decrypted == stopLength 
-       then decrypted
-       else byteAtATimeHelper oracle decrypted stopLength
+byteAtATimeHelper oracle decryptedSoFar stopLength = (trace $ "BAATHelper==> decrypted:" ++ show decrypted ++ ", stopLength:" ++ show stopLength) $
+    if B.length decrypted >= stopLength 
+       then (trace "BAATHelper==>done") $ decrypted
+       else (trace "BAATHelper==>doing recursive call...") $ byteAtATimeHelper oracle decrypted stopLength
     where
         decrypted = decryptedSoFar `B.snoc` nextByte
         nextByte = decryptNextByte oracle decryptedSoFar
@@ -126,7 +128,8 @@ byteAtATimeHelper oracle decryptedSoFar stopLength =
 byteAtATime :: Oracle -> B.ByteString
 byteAtATime oracle = byteAtATimeHelper oracle B.empty lengthOfUnknown
     where 
-        lengthOfUnknown = B.length . oracle $ nBytePayload 0
+        lengthOfUnknown = B.length unknown
+        -- lengthOfUnknown = B.length . oracle $ nBytePayload 0
 
 decryptUnknown :: Oracle -> B.ByteString
 decryptUnknown oracle = case mode of 
