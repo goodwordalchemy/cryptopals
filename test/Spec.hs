@@ -10,6 +10,7 @@ import qualified Challenge7 as C7
 import qualified Challenge8 as C8
 import qualified Challenge9 as C9
 import qualified Challenge10 as C10
+import qualified Challenge11 as C11
 
 
 challenge1Test = TestCase 
@@ -76,6 +77,14 @@ challenge10Test = TestCase
                       ["I'm", "back"]
                       result
 
+challenge11Test = TestCase
+              $ do 
+                  result <- C11.challenge11
+                  assertEqual
+                      "Challenge 11: An ECB/CBC detection oracle"
+                      100
+                      result
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -86,6 +95,7 @@ testList = TestList [ challenge1Test
                     , challenge8Test
                     , challenge9Test
                     , challenge10Test
+                    , challenge11Test
                     ]
 main :: IO ()
 main = do

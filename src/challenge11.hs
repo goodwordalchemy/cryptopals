@@ -1,3 +1,5 @@
+module Challenge11(challenge11) where
+
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.Word(Word8)
@@ -87,11 +89,12 @@ detectionSuccessesForTrials nTrials nSuccesses = do
        else detectionSuccessesForTrials (nTrials-1) (nSuccesses)
     
 
-testDetectEncryptionMode :: IO ()
-testDetectEncryptionMode = do
+challenge11 :: IO Int
+challenge11 = do
     let nTrials = 100
-    putStr $ "# of successful detections in " ++ (show nTrials) ++ " trials ==>"
+    -- putStr $ "# of successful detections in " ++ (show nTrials) ++ " trials ==>"
     nSuccesses <- detectionSuccessesForTrials nTrials 0
-    putStrLn $ show nSuccesses
+    -- putStrLn $ show nSuccesses
     let percent = (fromIntegral nSuccesses) / (fromIntegral nTrials) * 100
-    putStrLn $ "That's " ++ (show percent) ++ "%"
+    -- putStrLn $ "That's " ++ (show percent) ++ "%"
+    return $ round percent
