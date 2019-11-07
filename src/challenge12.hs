@@ -1,6 +1,9 @@
 module Challenge12() where
 
+import Data.List
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
+import System.Random
 
 import BlockOracle
 import qualified Lib
@@ -21,7 +24,7 @@ appendCipherText :: B.ByteString -> B.ByteString
 appendCipherText knownPlainText = B.append knownPlainText cipherText
 
 nBytePlainText :: Int -> B.ByteString
-nBytePlainText n = B.replicate n 'A'
+nBytePlainText n = BC.replicate n 'A'
 
 nBytePayload :: Int -> B.ByteString
 nBytePayload n = appendCipherText (nBytePlainText n)
@@ -35,9 +38,11 @@ getNOracleOutputsHelper
 getNOracleOutputsHelper oracle plainText nTrials acc
     | nTrials == 0 = return acc
     | otherwise = do
-        return getNOracleOutputs oracle (nTrials-1) plainText (result:acc)
-    where
-        result = oracle plainText
+        oracleOut <- oracle plainText
+        result <- getNOracleOutputsHelper 
+                    oracle plainText (nTrials-1) (oracleOut:acc)
+        return result
+
 
 getNOracleOutputs
     :: Oracle 
@@ -45,14 +50,39 @@ getNOracleOutputs
     -> Int 
     -> IO [B.ByteString]
 getNOracleOutputs oracle plainText nTrials = result
-    where result = getNOracleOutputs oracle plainText nTrials []
+    where result = getNOracleOutputsHelper oracle plainText nTrials []
 
-mostCommonCipherTextLength :: Oracle -> B.ByteString -> IO Int
-mostCommonCipherTextLength oracle plainText = do
-    outputs <- getNOracleOutputs oracle plainText 20
-    return $ mostCommon results
+mostCommonLength :: Oracle -> Int -> IO Int
+mostCommonLength oracle plainTextSize = do
+    let plainText = nBytePayload plainTextSize
+        nTrials = 20
+    results <- getNOracleOutputs oracle plainText nTrials
+    return $ mostCommon . map B.length $ results
 
--- detectBlockSize :: Oracle -> Int
--- detectBlockSize oracle = blockSize
---     where
-       
+detectBlockSizeHelper :: Oracle -> Int -> Int -> IO Int
+detectBlockSizeHelper oracle thisSize prevCipherSize = do
+    thisCipherSize <- mostCommonLength oracle thisSize
+    if thisCipherSize == prevCipherSize
+       then detectBlockSizeHelper oracle (thisSize+1) thisCipherSize
+       else return $ thisCipherSize - prevCipherSize
+
+detectBlockSize :: Oracle -> IO Int
+detectBlockSize oracle = do
+    initialCipherSize <- mostCommonLength oracle 1
+    blockSize <- detectBlockSizeHelper oracle 2 initialCipherSize
+    return blockSize
+
+
+testDetectBlockSize :: IO ()
+testDetectBlockSize = do
+    gen <- getStdGen
+    let (key, _) = getRandomAESKey gen
+        oracle = getSimplePaddingOracle key
+    blockSize <- detectBlockSize oracle
+    putStrLn "================"
+    putStr "This should be 16 ==>"
+    putStrLn $ show blockSize
+    
+main :: IO ()
+main = do
+    testDetectBlockSize

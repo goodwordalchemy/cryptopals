@@ -1,4 +1,5 @@
 module BlockOracle( EncryptionMode(..)
+                  , getRandomAESKey
                   , modeOracleWithAnswer
                   , getSimplePaddingOracle
 ) where
