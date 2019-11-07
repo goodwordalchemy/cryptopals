@@ -8,6 +8,7 @@ import qualified Challenge5 as C5
 import qualified Challenge6 as C6
 import qualified Challenge7 as C7
 import qualified Challenge8 as C8
+import qualified Challenge9 as C9
 
 
 challenge1Test = TestCase 
@@ -60,6 +61,12 @@ challenge8Test = TestCase
                       1
                       result
 
+challenge9Test = TestCase 
+               $ assertEqual 
+                    "Challenge 9: Implement PKCS#7 padding"
+                    [20,30,4]
+                    C9.challenge9
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -68,6 +75,7 @@ testList = TestList [ challenge1Test
                     , challenge6Test
                     , challenge7Test
                     , challenge8Test
+                    , challenge9Test
                     ]
 main :: IO ()
 main = do
