@@ -1,7 +1,7 @@
 module BlockOracle( EncryptionMode(..)
+                  , guessEncryptionMode
                   , getRandomAESKey
                   , modeOracleWithAnswer
-                  , getSimplePaddingOracle
 ) where
 
 import qualified Data.ByteString as B
@@ -67,10 +67,3 @@ modeOracleWithAnswer gen plainText = result
         (coinFlipResult, _) = coinFlip gen'''
 
 
-getSimplePaddingOracle :: B.ByteString -> B.ByteString -> IO B.ByteString
-getSimplePaddingOracle key plainText  = do
-    gen <- newStdGen
-    let aes = Lib.initAES128 key
-        (garbledPlainText, _) = getGarbledPlainText gen plainText
-        cipherText = Lib.ecbEncryption aes garbledPlainText
-    return cipherText

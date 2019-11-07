@@ -3,6 +3,8 @@ module Challenge12() where
 import Data.List
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
+import Data.Word(Word8)
+import Debug.Trace
 import System.Random
 
 import BlockOracle
@@ -44,19 +46,53 @@ detectBlockSize :: Oracle -> Int
 detectBlockSize oracle = detectBlockSizeHelper oracle 2 initialCipherSize
     where initialCipherSize = B.length . oracle $ nBytePayload 1
 
+findMatchCharHelper :: Oracle -> B.ByteString -> Word8 -> Word8 -> Word8
+findMatchCharHelper oracle pad charToMatch curChar = 
+    if isMatch
+        then curChar
+        else if curChar < 255
+            then findMatchCharHelper oracle pad charToMatch nextChar
+            else error $ "Could not find matching character for " ++ show curChar
+    where
+        nextChar = traceShowId $ curChar + 1
+        isMatch = oracleOut `B.index` idxToCheck == charToMatch
+        idxToCheck = B.length pad
+        oracleOut = oracle paddedChar
+        paddedChar = pad `B.snoc` curChar
 
--- byteAtAtime :: Oracle -> IO B.ByteString
--- byteAtATime oracle = 
+findMatchChar :: Oracle -> B.ByteString -> Word8 -> Word8
+findMatchChar oracle pad charToMatch = matchChar
+    where matchChar = findMatchCharHelper oracle pad charToMatch 0
 
--- decryptUnknown :: Oracle -> IO B.ByteString
--- decryptUnknown oracle = do
---     blockSize <- detectBlockSize oracle
---     let mode = guessEncryptionMode . oracle $ nBytePayload (3*blockSize)
---     if mode == CBC
---         then error "Can't decrypt cbc mode yet"
---         else byteAtATime oracle
---
-----
+decryptByteAtN :: Oracle -> Int -> Word8
+decryptByteAtN oracle n = findMatchChar oracle pad charToMatch
+    where
+        pad = nBytePayload padLength
+        padLength = 15 - (n `mod` 16) + (n `div` 16 * 16)
+        charToMatch = (oracle pad) `B.index` (padLength + 1)
+
+
+byteAtATime :: Oracle -> B.ByteString
+byteAtATime oracle = B.pack $ map decryptByteAtN' [0..lengthOfUnknown-1]
+    where 
+        lengthOfUnknown = B.length . oracle $ nBytePayload 0
+        decryptByteAtN' = decryptByteAtN oracle
+
+decryptUnknown :: Oracle -> B.ByteString
+decryptUnknown oracle = case mode of 
+        CBC -> error "Can't decrypt cbc mode yet"
+        ECB -> byteAtATime oracle
+    where mode = guessEncryptionMode . oracle $ nBytePayload (3*blockSize)
+          blockSize = detectBlockSize oracle
+
+--- TESTS ---
+
+getOracle :: IO Oracle
+getOracle = do
+    gen <- getStdGen
+    let (key, _) = getRandomAESKey gen
+        oracle = getSimpleOracle key
+    return oracle
 
 testDetectBlockSize :: IO ()
 testDetectBlockSize = do
@@ -65,9 +101,22 @@ testDetectBlockSize = do
         oracle = getSimpleOracle key
         blockSize = detectBlockSize oracle
     putStrLn "================"
+    putStrLn "Testing block size"
     putStr "This should be 16 ==>"
     putStrLn $ show blockSize
+
+
+testDecryptUnknown :: IO ()
+testDecryptUnknown = do
+    oracle <- getOracle
+    let result = decryptUnknown oracle
+    putStrLn "================"
+    putStrLn "Testing decryption"
+    putStr "What is this? =>"
+    print result
+
     
 main :: IO ()
 main = do
     testDetectBlockSize
+    testDecryptUnknown
