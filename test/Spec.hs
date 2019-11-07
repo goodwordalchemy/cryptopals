@@ -5,6 +5,7 @@ import qualified Challenge2 as C2
 import qualified Challenge3 as C3
 import qualified Challenge4 as C4
 import qualified Challenge5 as C5
+import qualified Challenge6 as C6
 
 
 challenge1Test = TestCase 
@@ -32,6 +33,14 @@ challenge5Test = TestCase
                     "Challenge 5: Implement repeating-key XOR"
                     C5.challenge5
                     C5.expectedCipherText
+
+chalenge6Test = TestCase
+              $ do 
+                  result <- C6.challenge6
+                  assertEqual
+                      "Challenge 6: Break repeating-key XOR"
+                      result
+                      ["I'm", "Back"]
                     
 
 testList = TestList [ challenge1Test

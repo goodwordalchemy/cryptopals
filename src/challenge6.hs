@@ -1,3 +1,5 @@
+module Challenge6(challenge6) where
+
 import Data.Bits(popCount)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -130,6 +132,13 @@ testDecryption = do
     cipherText <- loadEncryptedFile
     let result = head $ bestDecryptions cipherText
     print result    
+
+challenge6 :: IO [String]
+challenge6 = do
+    cipherText <- loadEncryptedFile
+    let result = head $ bestDecryptions cipherText
+    return $ take 2 . words $ Lib.bytesToString result
+
 
 main :: IO ()
 main = do
