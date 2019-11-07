@@ -7,6 +7,7 @@ import qualified Challenge4 as C4
 import qualified Challenge5 as C5
 import qualified Challenge6 as C6
 import qualified Challenge7 as C7
+import qualified Challenge8 as C8
 
 
 challenge1Test = TestCase 
@@ -51,6 +52,14 @@ challenge7Test = TestCase
                       ["I'm", "back"]
                       result
 
+challenge8Test = TestCase
+              $ do 
+                  result <- C8.challenge8
+                  assertEqual
+                      "Challenge 8: Detect AES in ECB mode"
+                      1
+                      result
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -58,6 +67,7 @@ testList = TestList [ challenge1Test
                     , challenge5Test
                     , challenge6Test
                     , challenge7Test
+                    , challenge8Test
                     ]
 main :: IO ()
 main = do
