@@ -13,12 +13,12 @@ import qualified Lib
 type Oracle = B.ByteString -> B.ByteString
 
 unknown :: B.ByteString
-unknown = Lib.stringToBytes "XYZ"
--- unknown = Lib.base64ToBytes . Lib.stringToBytes $ "\
--- \Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
--- \aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
--- \dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
--- \YnkK"
+-- unknown = Lib.stringToBytes "12345678900987654321"
+unknown = Lib.base64ToBytes . Lib.stringToBytes $ "\
+\Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
+\aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
+\dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
+\YnkK"
 
 getSimpleOracle :: B.ByteString -> Oracle
 getSimpleOracle key plainText  = cipherText
@@ -46,40 +46,6 @@ detectBlockSizeHelper oracle thisSize prevCipherSize =
 detectBlockSize :: Oracle -> Int
 detectBlockSize oracle = detectBlockSizeHelper oracle 2 initialCipherSize
     where initialCipherSize = B.length . oracle $ nBytePayload 1
-
--- findMatchCharHelper :: Oracle -> B.ByteString -> Word8 -> Word8 -> Word8
--- findMatchCharHelper oracle pad charToMatch curChar = 
---     (trace $ "findMatchCharHelper==> charToMatch: " ++ show charToMatch ++ ", actualChar: " ++ show (oracleOut `B.index` idxToCheck) ++", trying char:" ++ show curChar) $
---     if isMatch
---         then curChar
---         else if curChar < 255
---             then findMatchCharHelper oracle pad charToMatch nextChar
---             else error $ "Could not find matching character for " ++ show curChar
---     where
---         nextChar = curChar + 1
---         isMatch = oracleOut `B.index` idxToCheck == charToMatch
---         idxToCheck = B.length pad
---         oracleOut = oracle paddedChar
---         paddedChar = pad `B.snoc` curChar
---
--- findMatchChar :: Oracle -> B.ByteString -> Word8 -> Word8
--- findMatchChar oracle pad charToMatch = matchChar
---     where matchChar = findMatchCharHelper oracle pad charToMatch 0
---
--- decryptByteAtN :: Oracle -> Int -> Word8
--- decryptByteAtN oracle n = (trace $ "decryptByteAtN==> padLength:" ++ show padLength ++ ", charToMatch: " ++ show charToMatch)
---                         $ findMatchChar oracle pad charToMatch
---     where
---         pad = nBytePayload padLength
---         padLength = 15 - (n `mod` 16) + (n `div` 16 * 16)
---         charToMatch = (oracle pad) `B.index` padLength
---
--- byteAtATime :: Oracle -> B.ByteString
--- byteAtATime oracle = (trace $ "Length of unknown: " ++ show lengthOfUnknown) 
---                    $ B.pack $ map decryptByteAtN' [0..lengthOfUnknown-1]
---     where 
---         lengthOfUnknown = B.length . oracle $ nBytePayload 0
---         decryptByteAtN' = decryptByteAtN oracle
 
 chunks16 :: B.ByteString -> [B.ByteString]
 chunks16 = Lib.splitIntoChunks 16
@@ -110,7 +76,7 @@ decryptNextByte oracle soFar = (trace $ "payload:" ++ show payload ++  ", soFar:
     where 
         soFarLength = B.length soFar
         blockNum = soFarLength `div` 16
-        padLength = 15 - (soFarLength `mod` 16) + (blockNum * 16)
+        padLength = 15 - (soFarLength `mod` 16)
         payload = nBytePayload padLength 
         byte = byteThatMakesMatchingPayload oracle payload soFar blockNum 0
         
