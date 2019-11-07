@@ -9,6 +9,7 @@ import qualified Challenge6 as C6
 import qualified Challenge7 as C7
 import qualified Challenge8 as C8
 import qualified Challenge9 as C9
+import qualified Challenge10 as C10
 
 
 challenge1Test = TestCase 
@@ -67,6 +68,14 @@ challenge9Test = TestCase
                     [20,30,4]
                     C9.challenge9
 
+challenge10Test = TestCase
+              $ do 
+                  result <- C10.challenge10
+                  assertEqual
+                      "Challenge 10: Implement CBC mode"
+                      ["I'm", "back"]
+                      result
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -76,6 +85,7 @@ testList = TestList [ challenge1Test
                     , challenge7Test
                     , challenge8Test
                     , challenge9Test
+                    , challenge10Test
                     ]
 main :: IO ()
 main = do

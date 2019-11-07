@@ -1,3 +1,5 @@
+module Challenge10(challenge10) where
+
 import Crypto.Cipher(AES128)
 import qualified Data.ByteString.Char8 as BC
 
@@ -56,6 +58,15 @@ testLargeFile = do
     
     BC.putStrLn plainText
     
+challenge10 :: IO [String]
+challenge10 = do
+    cipherText <- loadEncryptedFile
+    let aes = Lib.initAES128 $ Lib.stringToBytes "YELLOW SUBMARINE"
+        iv = BC.pack $ replicate 16 '\x00'
+        plainText = Lib.cbcDecryption aes iv cipherText
+
+    return $ take 2 . words $ Lib.bytesToString plainText
+
 
 main :: IO ()
 main = do
