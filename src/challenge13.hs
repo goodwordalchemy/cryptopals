@@ -139,6 +139,12 @@ role1 = encodingForWordAtOffset "role" 1
 admin6 :: B.ByteString
 admin6 = encodingForWordAtOffset "admin" 6
 
+one12 :: B.ByteString 
+one12 = encodingForWordAtOffset "A" 12
+
+two14 :: B.ByteString
+two14 = encodingForWordAtOffset "AA" 14
+
 fillCandidate :: Word8 -> Word8 -> B.ByteString
 fillCandidate a b = stdCipherText `B.append` payload
     where
@@ -147,9 +153,7 @@ fillCandidate a b = stdCipherText `B.append` payload
                 `B.append` hexB 
                 `B.append` admin6
                 `B.append` garbage
-        garbage = hexA `B.append` x `B.append` hexB `B.append` xx
-        xx = x `B.append` x
-        x = Lib.bytesToHex . Lib.stringToBytes $ "a"
+        garbage = hexA `B.append` one12 `B.append` hexB `B.append` two14
         hexA = hexify a
         hexB = hexify b
         stdCipherText =  encodedProfile stdPadding
@@ -158,9 +162,10 @@ candidates :: [B.ByteString]
 candidates = (map fillCandidate [0..255]) <*> [0..255]
 
 tryCandidate :: B.ByteString -> Bool
-tryCandidate c = roleIsMember && roleIsAdmin 
+tryCandidate c = hasKeyA || roleIsMember && roleIsAdmin 
     where
         profile = decodedProfile c
+        hasKeyA = "A" `Map.member` profile
         roleIsMember = "role" `Map.member` profile
         roleIsAdmin = (==) "admin" $ profile Map.! "role"
 
@@ -173,7 +178,7 @@ tryCandidates = filter snd results
 
 testUrlParser :: IO ()
 testUrlParser = do
-    let exampleUrl = "foo=bar&baz=qux&zap=zazzle"
+    let exampleUrl = "foo=bar&baz=qux&zap=zazzle&baz=snd"
     putStrLn $ show $ extractS profile exampleUrl
 
 testCleanEmail :: IO ()
