@@ -4,6 +4,8 @@ import Data.List(intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Debug.Trace
+import System.Environment
+
 import qualified Lib
 
 type UserProfile = Map.Map String String
@@ -132,10 +134,30 @@ testEncodingAndDecoding = do
     putStr "This should be true ==>"
     print $ (decodedProfile $ encodedProfile "shart@gmail.com") Map.! "email"
 
-main:: IO ()
-main = do
+runTests :: IO ()
+runTests = do
     testUrlParser
     testCleanEmail
     testProfileFor
     testUrlUnparse
     testEncodingAndDecoding
+
+runEncode :: String -> IO ()
+runEncode email = do
+    print $ encodedProfile email
+
+runAttempt :: String -> IO ()
+runAttempt encoded = do
+    let rawEncoded = Lib.stringToBytes encoded
+        profile = decodedProfile rawEncoded
+    print profile
+    print $ profile Map.! "role"
+
+main:: IO ()
+main = do
+    args <- getArgs
+    if length args == 0
+        then runTests
+        else case args !! 0 of "email" -> runEncode $ args !! 1
+                               "attempt" -> runAttempt $ args !! 1
+       
