@@ -9,8 +9,8 @@ import Data.Word(Word8)
 import System.Random
 
 import qualified Lib
+import Lib(getRandomAESKey, getRandomLetterStream, randomByteString)
 
-type BLetterStream = [Word8]
 data EncryptionMode = ECB | CBC deriving (Show, Eq)
 
 guessEncryptionMode :: B.ByteString -> EncryptionMode
@@ -18,14 +18,6 @@ guessEncryptionMode cipherText = if Lib.detectECB cipherText
                                  then ECB
                                  else CBC
 
-
-getRandomLetterStream :: StdGen -> (BLetterStream, StdGen)
-getRandomLetterStream g = (randomRs (0, 255) g, g)
-
-randomByteString :: BLetterStream -> Int -> (B.ByteString, BLetterStream)
-randomByteString rLetters n = (result, rest)
-    where result = B.pack these
-          (these, rest) = splitAt n rLetters
 
 coinFlip :: StdGen -> (Bool, StdGen)
 coinFlip g = random g
@@ -46,12 +38,6 @@ getGarbledPlainText g plainText = (garbled, g'')
         (letterStream, g''') = getRandomLetterStream g''
         (prefixLength, g'') = randomPadLength g'
         (suffixLength, g') = randomPadLength g
-
-getRandomAESKey :: StdGen -> (B.ByteString, StdGen)
-getRandomAESKey gen = (key, gen')
-    where 
-        (key, _) = randomByteString letterStream 16
-        (letterStream, gen') = getRandomLetterStream gen
 
 
 modeOracleWithAnswer :: StdGen -> B.ByteString -> (EncryptionMode, B.ByteString)

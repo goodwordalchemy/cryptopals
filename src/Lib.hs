@@ -1,29 +1,31 @@
-module Lib (
-    mapWithOrig,
-    splitIntoChunks,
-    base64ToBytes,
-    bytesToBase64,
-    hexToBytes,
-    bytesToHex,
-    bytesToString,
-    stringToBytes,
-    hexStringToBytes,
-    charToWord8,
-    word8ToChar,
-    fixedXOR,
-    xorWithLetter,
-    sortedLetterScores,
-    repeatingXOR,
-    mostLikelyXorKey,
-    padToLength,
-    padToMultiple,
-    detectECB,
-    initAES128,
-    ecbDecryption,
-    ecbEncryption,
-    cbcDecryption,
-    cbcEncryption,
-) where
+module Lib ( mapWithOrig
+           , splitIntoChunks
+           , base64ToBytes
+           , bytesToBase64
+           , hexToBytes
+           , bytesToHex
+           , bytesToString
+           , stringToBytes
+           , hexStringToBytes
+           , charToWord8
+           , word8ToChar
+           , fixedXOR
+           , xorWithLetter
+           , sortedLetterScores
+           , repeatingXOR
+           , mostLikelyXorKey
+           , padToLength
+           , padToMultiple
+           , detectECB
+           , initAES128
+           , ecbDecryption
+           , ecbEncryption
+           , cbcDecryption
+           , cbcEncryption
+           , getRandomAESKey
+           , getRandomLetterStream
+           , randomByteString
+           ) where
 
 import Crypto.Cipher
 import Data.Bits(xor)
@@ -39,6 +41,7 @@ import qualified Data.Text.Encoding as TE
 import Data.Tuple(snd)
 import Data.Word(Word8)
 import Debug.Trace
+import System.Random
 
 mapWithOrig :: (a -> b) -> [a] -> [(a, b)]
 mapWithOrig func = map (\a -> (a, func a)) 
@@ -283,3 +286,18 @@ cbcDecryption ctx iv cipherText
                    $ iv : chunks
         decrypteds = map (ecbDecryption ctx) chunks
         chunks = splitIntoChunks 16 cipherText
+
+randomByteString :: [Word8] -> Int -> (B.ByteString, [Word8])
+randomByteString rLetters n = (result, rest)
+    where result = B.pack these
+          (these, rest) = splitAt n rLetters
+
+getRandomLetterStream :: StdGen -> ([Word8], StdGen)
+getRandomLetterStream g = (randomRs (0, 255) g, g)
+
+getRandomAESKey :: StdGen -> (B.ByteString, StdGen)
+getRandomAESKey gen = (key, gen')
+    where 
+        (key, _) = randomByteString letterStream 16
+        (letterStream, gen') = getRandomLetterStream gen
+
