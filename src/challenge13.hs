@@ -1,9 +1,11 @@
 import Text.ParserCombinators.ReadP
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
+import Data.Char(ord)
 import Data.List(intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Data.Word(Word8)
 import Debug.Trace
 import System.Environment
 
@@ -112,19 +114,60 @@ decodedProfile :: B.ByteString -> UserProfile
 decodedProfile rawEncoded = urlParse $ decodedProfileString rawEncoded
 
 -- Attack --
+newBlockPadddingLength :: Int
+newBlockPadddingLength = 9
+
+stdPadding :: String
+stdPadding = replicate newBlockPadddingLength 'A'
+
 encodingForWordAtOffset :: String -> Int -> B.ByteString
 encodingForWordAtOffset word offset = result
     where
-        newBlockPadddingLength = 9
-        paddingLength = newBlockPadddingLength + offset
-        padding = replicate paddingLength 'A'
+        padding = stdPadding ++ (replicate offset 'A')
         payload = padding ++ word
         cipherText = encodedProfile payload
         chunks = Lib.splitIntoChunks 32  cipherText
         chunk = chunks !! 2
-        rawResult = B.take (2*length word) . B.drop (2*offset) $ chunk
-        result = rawResult
+        result = B.take (2*length word) . B.drop (2*offset) $ chunk
 
+hexify :: Word8 -> B.ByteString
+hexify l = Lib.bytesToHex $ B.singleton l
+
+role1 :: B.ByteString
+role1 = encodingForWordAtOffset "role" 1
+
+admin6 :: B.ByteString
+admin6 = encodingForWordAtOffset "admin" 6
+
+fillCandidate :: Word8 -> Word8 -> B.ByteString
+fillCandidate a b = stdCipherText `B.append` payload
+    where
+        payload = hexA 
+                `B.append` role1 
+                `B.append` hexB 
+                `B.append` admin6
+                `B.append` garbage
+        garbage = hexA `B.append` x `B.append` hexB `B.append` xx
+        xx = x `B.append` x
+        x = Lib.bytesToHex . Lib.stringToBytes $ "a"
+        hexA = hexify a
+        hexB = hexify b
+        stdCipherText =  encodedProfile stdPadding
+
+candidates :: [B.ByteString]
+candidates = (map fillCandidate [0..255]) <*> [0..255]
+
+tryCandidate :: B.ByteString -> Bool
+tryCandidate c = roleIsMember && roleIsAdmin 
+    where
+        profile = decodedProfile c
+        roleIsMember = "role" `Map.member` profile
+        roleIsAdmin = (==) "admin" $ profile Map.! "role"
+
+tryCandidates :: [(B.ByteString, Bool)]
+tryCandidates = filter snd results
+    where 
+        results = Lib.mapWithOrig tryCandidate candidates
 
 -- Tests --
 
@@ -152,8 +195,15 @@ testEncodingAndDecoding = do
 
 testEncodingForWordAtOffset :: IO ()
 testEncodingForWordAtOffset = do
+    putStr "This should be '6ed43f5e' ==>"
     print $ encodingForWordAtOffset "role" 0
+
+    putStr "This should be 'bcde7e3e' ==>"
     print $ encodingForWordAtOffset "role" 3
+
+testTryCandidates :: IO ()
+testTryCandidates = do
+    print $ tryCandidates
 
 runTests :: IO ()
 runTests = do
@@ -163,6 +213,7 @@ runTests = do
     testUrlUnparse
     testEncodingAndDecoding
     testEncodingForWordAtOffset
+    testTryCandidates
 
 runEncode :: String -> IO ()
 runEncode email = do
