@@ -1,4 +1,5 @@
 import Text.ParserCombinators.ReadP
+import qualified Data.ByteString as B
 import Data.List(intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -85,6 +86,28 @@ profileFor email = Map.fromList [ ("email", clean)
                                 ]
     where clean = cleanEmail email
 
+aesKey :: B.ByteString
+aesKey = Lib.hexStringToBytes "da5424c65581ec4746423e2a9b2f09c7"
+
+encodedProfile :: String -> B.ByteString
+encodedProfile email = Lib.bytesToHex rawEncoded
+    where 
+        aes = Lib.initAES128 aesKey
+        profileString = Lib.stringToBytes . urlUnparse $ profileFor email
+        rawEncoded = Lib.ecbEncryption aes profileString
+
+decodedProfileString :: B.ByteString -> String
+decodedProfileString rawEncoded = profileString
+    where
+        aes = Lib.initAES128 aesKey
+        encoded = Lib.hexToBytes rawEncoded
+        profileBytes= Lib.ecbDecryption aes encoded
+        profileString = Lib.bytesToString profileBytes
+        
+    
+decodedProfile :: B.ByteString -> UserProfile
+decodedProfile rawEncoded = urlParse $ decodedProfileString rawEncoded
+
 -- Tests --
 
 testUrlParser :: IO ()
@@ -104,9 +127,15 @@ testUrlUnparse :: IO ()
 testUrlUnparse = do
     print $ urlUnparse $ profileFor "foo@bar.com&role=admin"
 
+testEncodingAndDecoding :: IO ()
+testEncodingAndDecoding = do
+    putStr "This should be true ==>"
+    print $ (decodedProfile $ encodedProfile "shart@gmail.com") Map.! "email"
+
 main:: IO ()
 main = do
     testUrlParser
     testCleanEmail
     testProfileFor
     testUrlUnparse
+    testEncodingAndDecoding
