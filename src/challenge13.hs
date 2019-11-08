@@ -1,5 +1,6 @@
 import Text.ParserCombinators.ReadP
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import Data.List(intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -110,6 +111,21 @@ decodedProfileString rawEncoded = profileString
 decodedProfile :: B.ByteString -> UserProfile
 decodedProfile rawEncoded = urlParse $ decodedProfileString rawEncoded
 
+-- Attack --
+encodingForWordAtOffset :: String -> Int -> B.ByteString
+encodingForWordAtOffset word offset = result
+    where
+        newBlockPadddingLength = 9
+        paddingLength = newBlockPadddingLength + offset
+        padding = replicate paddingLength 'A'
+        payload = padding ++ word
+        cipherText = encodedProfile payload
+        chunks = Lib.splitIntoChunks 32  cipherText
+        chunk = chunks !! 2
+        rawResult = B.take (2*length word) . B.drop (2*offset) $ chunk
+        result = rawResult
+
+
 -- Tests --
 
 testUrlParser :: IO ()
@@ -134,6 +150,11 @@ testEncodingAndDecoding = do
     putStr "This should be true ==>"
     print $ (decodedProfile $ encodedProfile "shart@gmail.com") Map.! "email"
 
+testEncodingForWordAtOffset :: IO ()
+testEncodingForWordAtOffset = do
+    print $ encodingForWordAtOffset "role" 0
+    print $ encodingForWordAtOffset "role" 3
+
 runTests :: IO ()
 runTests = do
     testUrlParser
@@ -141,6 +162,7 @@ runTests = do
     testProfileFor
     testUrlUnparse
     testEncodingAndDecoding
+    testEncodingForWordAtOffset
 
 runEncode :: String -> IO ()
 runEncode email = do

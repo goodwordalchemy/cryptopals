@@ -46,9 +46,6 @@ detectBlockSize :: Oracle -> Int
 detectBlockSize oracle = detectBlockSizeHelper oracle 2 initialCipherSize
     where initialCipherSize = B.length . oracle $ nBytePayload 1
 
-chunks16 :: B.ByteString -> [B.ByteString]
-chunks16 = Lib.splitIntoChunks 16
-
 byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8 -> Word8
 byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte = 
     if guess == toMatch
@@ -65,7 +62,7 @@ byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte =
         guess = blockICareAbout guessOracleOut
 
         blockICareAbout :: B.ByteString -> B.ByteString
-        blockICareAbout oracleOut = (chunks16 oracleOut) !! blockNum
+        blockICareAbout oracleOut = (Lib.chunks16 oracleOut) !! blockNum
           
 
 

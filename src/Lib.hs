@@ -1,5 +1,6 @@
 module Lib ( mapWithOrig
            , splitIntoChunks
+           , chunks16
            , base64ToBytes
            , bytesToBase64
            , hexToBytes
@@ -52,6 +53,10 @@ splitIntoChunks n text
     | B.length text < n = []
     | otherwise = front : splitIntoChunks n rest
     where (front, rest) = B.splitAt n text
+
+chunks16 :: B.ByteString -> [B.ByteString]
+chunks16 = Lib.splitIntoChunks 16
+
 
 isSubstring :: B.ByteString -> B.ByteString -> Bool
 isSubstring needle haystack = B.length match > 0
