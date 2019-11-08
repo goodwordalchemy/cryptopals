@@ -1,10 +1,11 @@
 import Text.ParserCombinators.ReadP
+import Data.List(intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Debug.Trace
 import qualified Lib
 
-data UserProfile = UserProfile (Map.Map String String) deriving Show
+type UserProfile = Map.Map String String
 
 extractS :: ReadP a -> String -> a
 -- extractS p s = head [x | (x,"") <- readP_to_S p s]
@@ -50,13 +51,16 @@ pKV = do
 profile :: ReadP UserProfile
 profile = do
     kvs <- many1 pKV
-    return $ UserProfile $ Map.fromList kvs
+    return $ Map.fromList kvs
 
 urlParse :: String -> UserProfile
 urlParse url = extractS profile url
 
--- urlUnparse :: UserProfile -> String
--- urlUnparse = 
+urlUnparse :: UserProfile -> String
+urlUnparse profile = intercalate "&" 
+                   $ Map.foldlWithKey foldFunc [] profile
+    where
+        foldFunc = (\a k v -> (k ++ "=" ++ v):a)
     
 -- Email Parsing Utils --
 emailChars :: Set.Set Char
@@ -75,8 +79,7 @@ cleanEmail email = extractS pEmail email
 
 -- Oracle Utilities --
 profileFor :: String -> UserProfile
-profileFor email = UserProfile 
-                 $ Map.fromList [ ("email", clean)
+profileFor email = Map.fromList [ ("email", clean)
                                 , ("role", "user")
                                 , ("uid", "10")
                                 ]
@@ -97,8 +100,13 @@ testProfileFor :: IO ()
 testProfileFor = do
     print $ profileFor "foo@bar.com&role=admin"
 
+testUrlUnparse :: IO ()
+testUrlUnparse = do
+    print $ urlUnparse $ profileFor "foo@bar.com&role=admin"
+
 main:: IO ()
 main = do
     testUrlParser
     testCleanEmail
     testProfileFor
+    testUrlUnparse
