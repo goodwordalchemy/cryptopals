@@ -12,6 +12,7 @@ import qualified Challenge9 as C9
 import qualified Challenge10 as C10
 import qualified Challenge11 as C11
 import qualified Challenge12 as C12
+import qualified Challenge13 as C13
 
 
 challenge1Test = TestCase 
@@ -94,6 +95,12 @@ challenge12Test = TestCase
                       ["Rollin'", "in"]
                       result
 
+challenge13Test = TestCase
+                $ assertEqual
+                      "Challenge 13: ECB cut-and-paste"
+                      True
+                      C13.challenge13
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -106,6 +113,7 @@ testList = TestList [ challenge1Test
                     , challenge10Test
                     , challenge11Test
                     , challenge12Test
+                    , challenge13Test
                     ]
 main :: IO ()
 main = do

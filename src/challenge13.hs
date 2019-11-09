@@ -1,3 +1,5 @@
+module Challenge13(challenge13) where
+
 import Text.ParserCombinators.ReadP
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -64,13 +66,13 @@ urlParse url = extractS profile url
 
 urlUnparse :: UserProfile -> String
 urlUnparse profile = intercalate "&" 
-                   $ Map.foldlWithKey foldFunc [] profile
+                   $ Map.foldrWithKey foldFunc [] profile
     where
-        foldFunc = (\a k v -> (k ++ "=" ++ v):a)
+        foldFunc = (\k v a -> (k ++ "=" ++ v):a)
     
 -- Email Parsing Utils --
 emailChars :: Set.Set Char
-emailChars = lettersAndNumbers `Set.union` (Set.fromList "@._")
+emailChars = lettersAndNumbers `Set.union` (Set.fromList "\v@._")
 
 pEmailChar :: ReadP Char
 pEmailChar = satisfy (`Set.member` emailChars)
@@ -114,65 +116,48 @@ decodedProfile :: B.ByteString -> UserProfile
 decodedProfile rawEncoded = urlParse $ decodedProfileString rawEncoded
 
 -- Attack --
-newBlockPadddingLength :: Int
-newBlockPadddingLength = 9
+chunks32 :: B.ByteString -> [B.ByteString]
+chunks32 text = Lib.splitIntoChunks 32 text
 
-stdPadding :: String
-stdPadding = replicate newBlockPadddingLength 'A'
-
-encodingForWordAtOffset :: String -> Int -> B.ByteString
-encodingForWordAtOffset word offset = result
+getEncodedProfileBlocks :: String -> [Int] -> B.ByteString
+getEncodedProfileBlocks payload blockNums = B.concat requestedChunks
+    where 
+        encoded = encodedProfile payload
+        chunks = chunks32 encoded
+        requestedChunks = map (chunks !!) blockNums
+          
+-- email=<20 * A>&role=...
+section1 :: B.ByteString
+section1 = getEncodedProfileBlocks payload [0, 1]
     where
-        padding = stdPadding ++ (replicate offset 'A')
-        payload = padding ++ word
-        cipherText = encodedProfile payload
-        chunks = Lib.splitIntoChunks 32  cipherText
-        chunk = chunks !! 2
-        result = B.take (2*length word) . B.drop (2*offset) $ chunk
+        payload = replicate 20 'A'
 
-hexify :: Word8 -> B.ByteString
-hexify l = Lib.bytesToHex $ B.singleton l
+-- email=<10 * A>admin<11 * \v>&role=user&uid=10 to decode to admin 
+section2 :: B.ByteString
+section2 = getEncodedProfileBlocks payload [1]
+    where 
+        payload = offsetting ++ "admin" ++ padding
+        offsetting = replicate 10 'A'
+        padding = replicate 11 '\v'
 
-role1 :: B.ByteString
-role1 = encodingForWordAtOffset "role" 1
+-- email=...&role=user&uid=10.  This should come out to "&uid=10"
+section3 :: B.ByteString
+section3 = getEncodedProfileBlocks payload [2]
+    where 
+        payload = replicate 16 'A'
 
-admin6 :: B.ByteString
-admin6 = encodingForWordAtOffset "admin" 6
-
-one12 :: B.ByteString 
-one12 = encodingForWordAtOffset "A" 12
-
-two14 :: B.ByteString
-two14 = encodingForWordAtOffset "AA" 14
-
-fillCandidate :: Word8 -> Word8 -> B.ByteString
-fillCandidate a b = stdCipherText `B.append` payload
-    where
-        payload = hexA 
-                `B.append` role1 
-                `B.append` hexB 
-                `B.append` admin6
-                `B.append` garbage
-        garbage = hexA `B.append` one12 `B.append` hexB `B.append` two14
-        hexA = hexify a
-        hexB = hexify b
-        stdCipherText =  encodedProfile stdPadding
-
-candidates :: [B.ByteString]
-candidates = (map fillCandidate [0..255]) <*> [0..255]
+forgedCookie :: B.ByteString
+forgedCookie = B.concat [section1, section2, section3]
 
 tryCandidate :: B.ByteString -> Bool
-tryCandidate c = hasKeyA || roleIsMember && roleIsAdmin 
+tryCandidate c = roleIsMember && roleIsAdmin 
     where
         profile = decodedProfile c
-        hasKeyA = "A" `Map.member` profile
         roleIsMember = "role" `Map.member` profile
         roleIsAdmin = (==) "admin" $ profile Map.! "role"
 
-tryCandidates :: [(B.ByteString, Bool)]
-tryCandidates = filter snd results
-    where 
-        results = Lib.mapWithOrig tryCandidate candidates
+challenge13 :: Bool
+challenge13 = tryCandidate forgedCookie
 
 -- Tests --
 
@@ -198,17 +183,10 @@ testEncodingAndDecoding = do
     putStr "This should be true ==>"
     print $ (decodedProfile $ encodedProfile "shart@gmail.com") Map.! "email"
 
-testEncodingForWordAtOffset :: IO ()
-testEncodingForWordAtOffset = do
-    putStr "This should be '6ed43f5e' ==>"
-    print $ encodingForWordAtOffset "role" 0
-
-    putStr "This should be 'bcde7e3e' ==>"
-    print $ encodingForWordAtOffset "role" 3
-
-testTryCandidates :: IO ()
-testTryCandidates = do
-    print $ tryCandidates
+testTryCandidate :: IO ()
+testTryCandidate = do
+    print $ tryCandidate forgedCookie
+    print $ decodedProfile forgedCookie
 
 runTests :: IO ()
 runTests = do
@@ -217,8 +195,7 @@ runTests = do
     testProfileFor
     testUrlUnparse
     testEncodingAndDecoding
-    testEncodingForWordAtOffset
-    testTryCandidates
+    testTryCandidate
 
 runEncode :: String -> IO ()
 runEncode email = do
