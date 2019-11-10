@@ -10,22 +10,6 @@ import System.Random
 import BlockOracle
 import qualified Lib
 
-type Oracle = B.ByteString -> B.ByteString
-
-unknown :: B.ByteString
-unknown = Lib.base64ToBytes . Lib.stringToBytes $ "\
-\Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
-\aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
-\dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
-\YnkK"
-
-getSimpleOracle :: B.ByteString -> Oracle
-getSimpleOracle key plainText  = cipherText
-    where
-        aes = Lib.initAES128 key
-        fullPlainText = B.append plainText unknown
-        cipherText = Lib.ecbEncryption aes fullPlainText
-
 appendCipherText :: B.ByteString -> B.ByteString
 appendCipherText knownPlainText = B.append knownPlainText unknown
 

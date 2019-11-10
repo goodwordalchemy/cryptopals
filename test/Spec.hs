@@ -95,6 +95,9 @@ challenge12Test = TestCase
                       ["Rollin'", "in"]
                       result
 
+-- NOTE: uuid was supposed to come before role, but in my implementation
+-- it comes after, which means I can't decode a uuid, because
+-- the padding characters can't be urlEncoded.  But I get the idea here.
 challenge13Test = TestCase
                 $ assertEqual
                       "Challenge 13: ECB cut-and-paste"
