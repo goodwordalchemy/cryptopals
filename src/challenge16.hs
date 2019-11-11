@@ -64,28 +64,6 @@ nBytePayload n = BC.replicate n fillerChar
 xorChars :: Char -> Char -> Word8
 xorChars a b = fromIntegral (ord a `xor` ord b)
 
-xorNthChar :: Int -> Word8 -> B.ByteString -> B.ByteString
-xorNthChar n c text = (before `B.snoc` c) `B.append` rest
-    where
-        rest = B.tail at
-        (before, at) = B.splitAt n text
-
-replacementRequests :: [(Int, Char)]
-replacementRequests = [ (0, ';')
-                      , (6, '=')
-                      , (11, ';')
-                      , (13, '=')
-                      ]
-
-getReplacements :: B.ByteString -> [(Int, Word8)]
-getReplacements text = replacements
-    where 
-        replacements = map replacementLetter replacementRequests
-        replacementLetter (idx, letter) = (idx, doXor idx letter)
-        doXor idx letter = (letterAsWord8 'A') `xor` (letterAsWord8 letter)
-        -- doXor idx letter = (text `B.index` idx) `xor` (letterAsWord8 letter)
-        letterAsWord8 letter = ((fromIntegral $ ord letter)::Word8)
-
 replaceAtIndex :: Int -> Word8 -> B.ByteString -> B.ByteString
 replaceAtIndex idx c text = (before `B.snoc` c) `B.append` rest
     where
@@ -100,14 +78,27 @@ replaceAtIndices ((idx, char):ics) text = replaceAtIndices ics newText
 aaas :: String
 aaas = replicate 16 'A'
 
+replacementRequests :: [(Int, Char)]
+replacementRequests = [ (0, ';')
+                      , (6, '=')
+                      , (11, ';')
+                      , (13, '=')
+                      ]
+
+replacements :: [(Int, Word8)]
+replacements = map replacementLetter replacementRequests
+    where 
+        replacements = map replacementLetter replacementRequests
+        replacementLetter (idx, letter) = (idx, doXor letter)
+        doXor letter = (letterAsWord8 'A') `xor` (letterAsWord8 letter)
+        letterAsWord8 letter = ((fromIntegral $ ord letter)::Word8)
+
 precedingBlockForAttack :: Device -> B.ByteString -> B.ByteString
-precedingBlockForAttack device cipherText = attackBlock
+precedingBlockForAttack device cipherText = (trace $ "attackBlock:" ++ show attackBlock)$ attackBlock
     where
-        prevBlockIdx = B.length prefix `div` 16
+        prevBlockIdx = (B.length prefix) `div` 16
         prevBlock = (trace $ "prevBlock:" ++ show (nthBlock16 prevBlockIdx cipherText))$ nthBlock16 prevBlockIdx cipherText
-        curBlock = (trace $ "curBlock:" ++ show (nthBlock16 (prevBlockIdx+1) cipherText)) $ nthBlock16 (prevBlockIdx+1) cipherText
-        replacements = getReplacements curBlock
-        attackBlock = (trace $ "attackBlock:" ++ show (replaceAtIndices replacements prevBlock)) $ replaceAtIndices replacements prevBlock
+        attackBlock = replaceAtIndices replacements prevBlock
         
 
 replaceBlock :: Int -> B.ByteString -> B.ByteString -> B.ByteString
@@ -122,7 +113,7 @@ replaceBlock n fullOrig replacement = replaced
         
 -- NOTE: assumes length of prefix is mutliple of 16
 getAttackString :: Device -> B.ByteString
-getAttackString device = replaced
+getAttackString device = (trace $ "before:"++ (show $ nthBlock16 prevBlockIdx origCipherText) ++ "\nafter:" ++ (show $ nthBlock16 prevBlockIdx replaced) ++ "\nbefore(orig):"++ (show $ nthBlock16 (1+prevBlockIdx) origCipherText) ++ "\nafter(orig):" ++ (show $ nthBlock16 (1+prevBlockIdx) replaced))$ replaced
     where
         replaced = replaceBlock prevBlockIdx origCipherText replacement 
         prevBlockIdx = B.length prefix `div` 16
@@ -138,6 +129,15 @@ testEncryptedUserInput = do
     device <- getCBCEncryptionDevice
     print $ encryptedUserInput device "foo=barls;kkd"
 
+
+testDecryptedUserInput :: IO ()
+testDecryptedUserInput = do
+    device <- getCBCEncryptionDevice
+    let userInput = aaas ++ "AadminAtrueAfAba" 
+        encrypted = encryptedUserInput device userInput
+        decrypted = device Decryption encrypted
+    print $ "Decrypted: " ++ show decrypted
+
 testAttack :: IO ()
 testAttack = do
     device <- getCBCEncryptionDevice
@@ -147,5 +147,5 @@ testAttack = do
     
 main :: IO ()
 main = do
-    -- testEncryptedUserInput
+    -- testDecryptedUserInput
     testAttack
