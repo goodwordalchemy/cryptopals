@@ -85,12 +85,14 @@ replacementRequests = [ (0, ';')
                       , (13, '=')
                       ]
 
-replacements :: [(Int, Word8)]
-replacements = map replacementLetter replacementRequests
+getReplacements :: B.ByteString -> [(Int, Word8)]
+getReplacements prevBlock = replacements
     where 
         replacements = map replacementLetter replacementRequests
-        replacementLetter (idx, letter) = (idx, doXor letter)
-        doXor letter = (letterAsWord8 'A') `xor` (letterAsWord8 letter)
+        replacementLetter (idx, letter) = (idx, doXor letter idx)
+        doXor letter idx = (letterAsWord8 'A') 
+                     `xor` (letterAsWord8 letter) 
+                     `xor` B.index prevBlock idx
         letterAsWord8 letter = ((fromIntegral $ ord letter)::Word8)
 
 precedingBlockForAttack :: Device -> B.ByteString -> B.ByteString
@@ -98,7 +100,10 @@ precedingBlockForAttack device cipherText = (trace $ "attackBlock:" ++ show atta
     where
         prevBlockIdx = (B.length prefix) `div` 16
         prevBlock = (trace $ "prevBlock:" ++ show (nthBlock16 prevBlockIdx cipherText))$ nthBlock16 prevBlockIdx cipherText
+
         attackBlock = replaceAtIndices replacements prevBlock
+
+        replacements = getReplacements prevBlock 
         
 
 replaceBlock :: Int -> B.ByteString -> B.ByteString -> B.ByteString
