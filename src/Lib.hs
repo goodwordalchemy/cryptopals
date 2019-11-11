@@ -1,6 +1,7 @@
 module Lib ( mapWithOrig
            , splitIntoChunks
            , chunks16
+           , findRepetitionIndex
            , base64ToBytes
            , bytesToBase64
            , hexToBytes
@@ -57,15 +58,33 @@ splitIntoChunks n text
 chunks16 :: B.ByteString -> [B.ByteString]
 chunks16 = Lib.splitIntoChunks 16
 
+subStringIndex :: B.ByteString -> B.ByteString -> Int
+subStringIndex needle haystack = B.length garbage
+    where (garbage, match) = B.breakSubstring needle haystack
 
 isSubstring :: B.ByteString -> B.ByteString -> Bool
-isSubstring needle haystack = B.length match > 0
-    where (_, match) = B.breakSubstring needle haystack
+isSubstring needle haystack = idx < B.length haystack 
+    where
+        idx = subStringIndex needle haystack
 
 subStringAtIndexIsRepeated :: B.ByteString -> Int -> Bool
-subStringAtIndexIsRepeated text idx= isSubstring front back
+subStringAtIndexIsRepeated text idx = isSubstring front back
     where (front, back) = B.splitAt 16 usableText
           (_, usableText) = B.splitAt idx text
+
+findRepetitionIndices :: B.ByteString -> [Int]
+findRepetitionIndices text = map fst
+               $ filter snd 
+               $ mapWithOrig (subStringAtIndexIsRepeated text) 
+               $ possibleStartPoints
+    where possibleStartPoints = [0..lastStartPoint]
+          lastStartPoint = (B.length text) - (2*16)
+
+findRepetitionIndex :: B.ByteString -> Maybe Int
+findRepetitionIndex text = if (length idxs) > 0
+                               then Just (idxs !! 0)
+                               else Nothing
+    where idxs = findRepetitionIndices text
 
 
 -- Base64 functions
@@ -248,6 +267,7 @@ detectECB text = any id
                $ possibleStartPoints
     where possibleStartPoints = [0..lastStartPoint]
           lastStartPoint = (B.length text) - (2*16)
+
 
 initAES128 :: B.ByteString -> AES128
 initAES128 = either (error . show) cipherInit . makeKey
