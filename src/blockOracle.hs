@@ -16,6 +16,7 @@ module BlockOracle( byteAtATime
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.Word(Word8)
+import Debug.Trace
 import System.Random
 
 import qualified Lib
@@ -114,49 +115,93 @@ detectBlockSize :: Oracle -> Int
 detectBlockSize oracle = detectBlockSizeHelper oracle 2 initialCipherSize
     where initialCipherSize = B.length . oracle $ nBytePayload 1
 
-byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8 -> Word8
-byteThatMakesMatchingPayload oracle payload soFar blockNum guessByte = 
+byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> B.ByteString -> Int -> Int -> Word8 -> Word8
+byteThatMakesMatchingPayload oracle payload soFar prefixLength blockNum guessByte = 
     if guess == toMatch
         then guessByte
         else if guessByte == 255 
             then error $ "didn't find a matching byte for payloadChunk:" ++ show toMatch
-            else byteThatMakesMatchingPayload oracle payload soFar blockNum nextByte
+            else byteThatMakesMatchingPayload 
+                    oracle 
+                    payload 
+                    soFar 
+                    prefixLength
+                    blockNum 
+                    nextByte
 
     where
         nextByte = guessByte + 1
         toMatchOracleOut = oracle payload
         toMatch = blockICareAbout toMatchOracleOut
         guessOracleOut = oracle $ payload `B.append` soFar `B.snoc` guessByte
-        guess = blockICareAbout guessOracleOut
+        guess = blockICareAbout $ areaICareAbout guessOracleOut
 
         blockICareAbout :: B.ByteString -> B.ByteString
         blockICareAbout oracleOut = (Lib.chunks16 oracleOut) !! blockNum
 
-decryptNextByte :: Oracle -> B.ByteString -> Word8
-decryptNextByte oracle soFar = byte
+        areaICareAbout :: B.ByteString -> B.ByteString
+        areaICareAbout oracleOut = snd $ B.splitAt prefixLength oracleOut
+
+decryptNextByte :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8
+decryptNextByte oracle soFar prefix skipBlocks = byte
     where 
         soFarLength = B.length soFar
-        blockNum = soFarLength `div` 16
+        blockNum = skipBlocks + soFarLength `div` 16
         padLength = 15 - (soFarLength `mod` 16)
-        payload = nBytePayload padLength 
-        byte = byteThatMakesMatchingPayload oracle payload soFar blockNum 0
+        payload = prefix `B.append` nBytePayload padLength 
+        prefixLength = B.length prefix
+        byte = byteThatMakesMatchingPayload 
+                    oracle 
+                    payload 
+                    soFar 
+                    prefixLength 
+                    blockNum 
+                    0
         
 
-byteAtATimeHelper :: Oracle -> B.ByteString -> Int-> B.ByteString
-byteAtATimeHelper oracle decryptedSoFar stopLength =
+byteAtATimeHelper 
+    :: Oracle 
+    -> B.ByteString 
+    -> B.ByteString 
+    -> Int
+    -> Int
+    -> B.ByteString
+byteAtATimeHelper oracle decryptedSoFar prefix skipBlocks stopLength =
     if B.length decrypted >= stopLength 
        then decrypted
-       else byteAtATimeHelper oracle decrypted stopLength
+       else byteAtATimeHelper oracle decrypted prefix skipBlocks stopLength
     where
         decrypted = decryptedSoFar `B.snoc` nextByte
-        nextByte = decryptNextByte oracle decryptedSoFar
+        nextByte = decryptNextByte oracle decryptedSoFar prefix skipBlocks
 
+getPrefixHelper :: Oracle -> Int -> B.ByteString
+getPrefixHelper oracle curLength
+  | curLength > 50 = error "Prefix is too long and there's probably something wrong"
+  | otherwise = if Lib.detectECB oracleOut 
+                   then prefix
+                   else getPrefixHelper oracle (curLength+1)
+   where oracleOut = oracle prefix
+         prefix = nBytePayload curLength
+
+getPrefix :: Oracle -> (B.ByteString, Int)
+getPrefix oracle = (prefix, nBlocks)
+    where 
+        prefix = getPrefixHelper oracle 0
+        maybeIndex = Lib.findRepetitionIndex (oracle prefix)
+        nBlocks = case maybeIndex of
+                    Nothing -> error "Couldn't find repetition index"
+                    Just idx -> (idx + (B.length prefix)) `div` 16
 
 byteAtATime :: Oracle -> B.ByteString
-byteAtATime oracle = byteAtATimeHelper oracle B.empty lengthOfUnknown
+byteAtATime oracle = byteAtATimeHelper 
+                        oracle 
+                        B.empty 
+                        prefix 
+                        skipBlocks 
+                        lengthOfUnknown
     where 
         lengthOfUnknown = B.length unknown
-        -- lengthOfUnknown = B.length . oracle $ nBytePayload 0
+        (prefix, skipBlocks) = getPrefix oracle
 
 decryptUnknown :: Oracle -> B.ByteString
 decryptUnknown oracle = case mode of 
