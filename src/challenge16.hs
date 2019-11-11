@@ -4,6 +4,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.Char(ord)
 import Data.Word(Word8)
+import Debug.Trace
 import System.Random(newStdGen)
 
 import qualified Lib
@@ -49,7 +50,7 @@ encryptedUserInput device userIn = encryptedIn
 oracle :: Device -> B.ByteString -> Bool
 oracle device encryptedIn = hasAdminString
     where
-        decryptedIn = device Decryption encryptedIn
+        decryptedIn = traceShowId $ device Decryption encryptedIn
         targetString = BC.pack ";admin=true;" 
         hasAdminString = Lib.isSubstring targetString decryptedIn
 
@@ -104,7 +105,7 @@ replaceBlock n fullOrig replacement = replaced
     where
         blocks = Lib.chunks16 fullOrig
         (start, at) = splitAt n blocks
-        (_, rest) = splitAt 1 blocks
+        (_, rest) = splitAt 1 at
         front = B.concat start
         back = B.concat rest
         replaced = B.concat [front, replacement, back]
@@ -113,13 +114,11 @@ replaceBlock n fullOrig replacement = replaced
 getAttackString :: Device -> B.ByteString
 getAttackString device = replaced
     where
-        replaced = replaceBlock prevBlockIdx replacement origCipherText
+        replaced = replaceBlock prevBlockIdx origCipherText replacement 
         prevBlockIdx = B.length prefix `div` 16
         replacement = precedingBlockForAttack device
         origCipherText = encryptedUserInput device payload
         payload = aaas ++ "AadminAtrueAfAba"
-
-
 
 -- Testing --
 testEncryptedUserInput :: IO ()
@@ -138,5 +137,5 @@ testAttack = do
     
 main :: IO ()
 main = do
-    testEncryptedUserInput
+    -- testEncryptedUserInput
     testAttack
