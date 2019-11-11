@@ -2,7 +2,7 @@ import Crypto.Cipher(AES128)
 import Data.Bits(xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.Char(ord)
+import Data.Char(chr, ord)
 import Data.Word(Word8)
 import Debug.Trace
 import System.Random(newStdGen)
@@ -61,14 +61,8 @@ fillerChar = 'A'
 nBytePayload :: Int -> B.ByteString
 nBytePayload n = BC.replicate n fillerChar
 
-xorChar :: Char -> Word8
-xorChar target = fromIntegral (ord fillerChar `xor` ord target)
-
-semicolonXorChar :: Word8
-semicolonXorChar = xorChar ';'
-
-equalsXorChar :: Word8
-equalsXorChar = xorChar '='
+xorChars :: Char -> Char -> Word8
+xorChars a b = fromIntegral (ord a `xor` ord b)
 
 xorNthChar :: Int -> Word8 -> B.ByteString -> B.ByteString
 xorNthChar n c text = (before `B.snoc` c) `B.append` rest
@@ -76,28 +70,44 @@ xorNthChar n c text = (before `B.snoc` c) `B.append` rest
         rest = B.tail at
         (before, at) = B.splitAt n text
 
-xorNthChars :: [(Int, Word8)] -> B.ByteString -> B.ByteString
-xorNthChars [] text = text
-xorNthChars ((idx, char):ics) text = xorNthChars ics newText
-    where newText = xorNthChar idx char text
+replacementRequests :: [(Int, Char)]
+replacementRequests = [ (0, ';')
+                      , (6, '=')
+                      , (11, ';')
+                      , (13, '=')
+                      ]
 
-replacements :: [(Int, Word8)]
-replacements = [ (0, semicolonXorChar)
-               , (6, equalsXorChar)
-               , (11, semicolonXorChar)
-               , (13, equalsXorChar)
-               ]
+getReplacements :: B.ByteString -> [(Int, Word8)]
+getReplacements text = replacements
+    where 
+        replacements = map replacementLetter replacementRequests
+        replacementLetter (idx, letter) = (idx, doXor idx letter)
+        doXor idx letter = (letterAsWord8 'A') `xor` (letterAsWord8 letter)
+        -- doXor idx letter = (text `B.index` idx) `xor` (letterAsWord8 letter)
+        letterAsWord8 letter = ((fromIntegral $ ord letter)::Word8)
+
+replaceAtIndex :: Int -> Word8 -> B.ByteString -> B.ByteString
+replaceAtIndex idx c text = (before `B.snoc` c) `B.append` rest
+    where
+        rest = B.tail at
+        (before, at) = B.splitAt idx text
+
+replaceAtIndices :: [(Int, Word8)] -> B.ByteString -> B.ByteString
+replaceAtIndices [] text = text
+replaceAtIndices ((idx, char):ics) text = replaceAtIndices ics newText
+    where newText = replaceAtIndex idx char text
 
 aaas :: String
 aaas = replicate 16 'A'
 
-precedingBlockForAttack :: Device -> B.ByteString
-precedingBlockForAttack device = attackBlock
+precedingBlockForAttack :: Device -> B.ByteString -> B.ByteString
+precedingBlockForAttack device cipherText = attackBlock
     where
         prevBlockIdx = B.length prefix `div` 16
-        cipherText = encryptedUserInput device aaas
-        prevBlock = nthBlock16 prevBlockIdx cipherText
-        attackBlock = xorNthChars replacements prevBlock
+        prevBlock = (trace $ "prevBlock:" ++ show (nthBlock16 prevBlockIdx cipherText))$ nthBlock16 prevBlockIdx cipherText
+        curBlock = (trace $ "curBlock:" ++ show (nthBlock16 (prevBlockIdx+1) cipherText)) $ nthBlock16 (prevBlockIdx+1) cipherText
+        replacements = getReplacements curBlock
+        attackBlock = (trace $ "attackBlock:" ++ show (replaceAtIndices replacements prevBlock)) $ replaceAtIndices replacements prevBlock
         
 
 replaceBlock :: Int -> B.ByteString -> B.ByteString -> B.ByteString
@@ -116,7 +126,7 @@ getAttackString device = replaced
     where
         replaced = replaceBlock prevBlockIdx origCipherText replacement 
         prevBlockIdx = B.length prefix `div` 16
-        replacement = precedingBlockForAttack device
+        replacement = precedingBlockForAttack device origCipherText
         origCipherText = encryptedUserInput device payload
         payload = aaas ++ "AadminAtrueAfAba"
 
