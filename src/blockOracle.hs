@@ -115,65 +115,6 @@ detectBlockSize :: Oracle -> Int
 detectBlockSize oracle = detectBlockSizeHelper oracle 2 initialCipherSize
     where initialCipherSize = B.length . oracle $ nBytePayload 1
 
-byteThatMakesMatchingPayload :: Oracle -> B.ByteString -> B.ByteString -> Int -> Int -> Word8 -> Word8
-byteThatMakesMatchingPayload oracle payload soFar prefixLength blockNum guessByte = 
-    if guess == toMatch
-        then guessByte
-        else if guessByte == 255 
-            then error $ "didn't find a matching byte for payloadChunk:" ++ show toMatch
-            else byteThatMakesMatchingPayload 
-                    oracle 
-                    payload 
-                    soFar 
-                    prefixLength
-                    blockNum 
-                    nextByte
-
-    where
-        nextByte = guessByte + 1
-        toMatchOracleOut = oracle payload
-        toMatch = blockICareAbout toMatchOracleOut
-        guessOracleOut = oracle $ payload `B.append` soFar `B.snoc` guessByte
-        guess = blockICareAbout $ areaICareAbout guessOracleOut
-
-        blockICareAbout :: B.ByteString -> B.ByteString
-        blockICareAbout oracleOut = (Lib.chunks16 oracleOut) !! blockNum
-
-        areaICareAbout :: B.ByteString -> B.ByteString
-        areaICareAbout oracleOut = snd $ B.splitAt prefixLength oracleOut
-
-decryptNextByte :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8
-decryptNextByte oracle soFar prefix skipBlocks = byte
-    where 
-        soFarLength = B.length soFar
-        blockNum = skipBlocks + soFarLength `div` 16
-        padLength = 15 - (soFarLength `mod` 16)
-        payload = prefix `B.append` nBytePayload padLength 
-        prefixLength = B.length prefix
-        byte = byteThatMakesMatchingPayload 
-                    oracle 
-                    payload 
-                    soFar 
-                    prefixLength 
-                    blockNum 
-                    0
-        
-
-byteAtATimeHelper 
-    :: Oracle 
-    -> B.ByteString 
-    -> B.ByteString 
-    -> Int
-    -> Int
-    -> B.ByteString
-byteAtATimeHelper oracle decryptedSoFar prefix skipBlocks stopLength =
-    if B.length decrypted >= stopLength 
-       then decrypted
-       else byteAtATimeHelper oracle decrypted prefix skipBlocks stopLength
-    where
-        decrypted = decryptedSoFar `B.snoc` nextByte
-        nextByte = decryptNextByte oracle decryptedSoFar prefix skipBlocks
-
 getPrefixHelper :: Oracle -> Int -> B.ByteString
 getPrefixHelper oracle curLength
   | curLength > 50 = error "Prefix is too long and there's probably something wrong"
@@ -192,11 +133,83 @@ getPrefix oracle = (prefix, nBlocks)
                     Nothing -> error "Couldn't find repetition index"
                     Just idx -> (idx + (B.length prefix)) `div` 16
 
+
+byteThatMakesMatchingPayload 
+    :: Oracle 
+    -> B.ByteString 
+    -> B.ByteString 
+    -> Int 
+    -> Int 
+    -> Word8 
+    -> Word8
+byteThatMakesMatchingPayload 
+    oracle 
+    payload 
+    soFar 
+    prefixLength
+    blockNum 
+    guessByte = 
+        if guess == toMatch
+            then guessByte
+            else if guessByte == 255 
+                then error $ "didn't find a matching byte for payloadChunk:" ++ show toMatch
+                else byteThatMakesMatchingPayload 
+                        oracle 
+                        payload 
+                        soFar 
+                        prefixLength
+                        blockNum 
+                        nextByte
+
+    where
+        nextByte = guessByte + 1
+        toMatchOracleOut = areaICareAbout $ oracle payload
+        toMatch = blockICareAbout toMatchOracleOut
+        guessOracleOut = oracle $ payload `B.append` soFar `B.snoc` guessByte
+        guess = blockICareAbout $ areaICareAbout guessOracleOut
+
+        blockICareAbout :: B.ByteString -> B.ByteString
+        blockICareAbout oracleOut = (Lib.chunks16 oracleOut) !! blockNum
+
+        areaICareAbout :: B.ByteString -> B.ByteString
+        areaICareAbout oracleOut = snd $ B.splitAt prefixLength oracleOut
+
+decryptNextByte :: Oracle -> B.ByteString -> B.ByteString -> Int -> Word8
+decryptNextByte oracle soFar prefix skipBlocks = byte
+    where 
+        soFarLength = B.length soFar
+        blockNum = (soFarLength `div` 16)
+        padLength = 15 - (soFarLength `mod` 16)
+        payload = prefix `B.append` nBytePayload padLength 
+        prefixLength = B.length prefix
+        byte = byteThatMakesMatchingPayload 
+                    oracle 
+                    payload 
+                    soFar 
+                    prefixLength 
+                    blockNum 
+                    0
+
+byteAtATimeHelper 
+    :: Oracle 
+    -> B.ByteString 
+    -> B.ByteString 
+    -> Int
+    -> Int
+    -> B.ByteString
+byteAtATimeHelper oracle decryptedSoFar prefix skipBlocks stopLength =
+    if B.length decrypted >= stopLength 
+       then decrypted
+       else byteAtATimeHelper oracle decrypted prefix skipBlocks stopLength
+    where
+        decrypted = decryptedSoFar `B.snoc` (((traceShow $ "nextByte: " ++ (show $ B.singleton nextByte)))$ nextByte)
+        nextByte = decryptNextByte oracle decryptedSoFar prefix skipBlocks
+
 byteAtATime :: Oracle -> B.ByteString
 byteAtATime oracle = byteAtATimeHelper 
                         oracle 
                         B.empty 
-                        prefix 
+                        ((traceShow $ "prefix length: " ++ (show $ B.length prefix))$ prefix)
                         skipBlocks 
                         lengthOfUnknown
     where 
