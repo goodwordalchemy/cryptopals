@@ -14,6 +14,7 @@ import qualified Challenge11 as C11
 import qualified Challenge12 as C12
 import qualified Challenge13 as C13
 import qualified Challenge14 as C14
+import qualified Challenge15 as C15
 
 
 challenge1Test = TestCase 
@@ -113,6 +114,12 @@ challenge14Test = TestCase
                       (True, ["Rollin'", "in"])
                       result
 
+challenge15Test = TestCase
+                $ assertEqual
+                      "Challenge 15: PKCS#7 padding validation"
+                      ("ICE ICE BABY",2)
+                      C15.challenge15
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -127,6 +134,7 @@ testList = TestList [ challenge1Test
                     , challenge12Test
                     , challenge13Test
                     , challenge14Test
+                    , challenge15Test
                     ]
 main :: IO ()
 main = do

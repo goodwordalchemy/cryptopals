@@ -51,7 +51,7 @@ mapWithOrig func = map (\a -> (a, func a))
 splitIntoChunks :: Int -> B.ByteString -> [B.ByteString]
 splitIntoChunks n text 
     | text == B.empty = []
-    | B.length text < n = []
+    | B.length text < n = [text]
     | otherwise = front : splitIntoChunks n rest
     where (front, rest) = B.splitAt n text
 
