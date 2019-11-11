@@ -1,6 +1,8 @@
 module Lib ( mapWithOrig
+           , isSubstring
            , splitIntoChunks
            , chunks16
+           , nthChunk16
            , findRepetitionIndex
            , base64ToBytes
            , bytesToBase64
@@ -57,6 +59,9 @@ splitIntoChunks n text
 
 chunks16 :: B.ByteString -> [B.ByteString]
 chunks16 = Lib.splitIntoChunks 16
+
+nthChunk16 :: Int -> B.ByteString -> B.ByteString
+nthChunk16 n text = (chunks16 text) !! n
 
 subStringIndex :: B.ByteString -> B.ByteString -> Int
 subStringIndex needle haystack = B.length garbage
