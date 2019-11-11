@@ -20,11 +20,12 @@ getOracle = do
 
 --- TESTS ---
 
-challenge14 :: IO [String]
+challenge14 :: IO (Bool, [String])
 challenge14 = do
     oracle <- getOracle
-    let result = decryptUnknown oracle
-    return $ take 2 $ words $ Lib.bytesToString result
+    let result = take 2 . words . Lib.bytesToString . decryptUnknown $ oracle
+        (_, prefixLength) = getPrefix oracle
+    return (prefixLength > 0, result)
 
 testDecryptUnknown :: IO ()
 testDecryptUnknown = do

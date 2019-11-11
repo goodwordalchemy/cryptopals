@@ -2,6 +2,7 @@ module BlockOracle( byteAtATime
                   , decryptUnknown
                   , detectBlockSize
                   , EncryptionMode(..)
+                  , getPrefix
                   , getSimpleOracle
                   , getRandomAESKey
                   , getRandomPrefix
@@ -202,14 +203,14 @@ byteAtATimeHelper oracle decryptedSoFar prefix skipBlocks stopLength =
        then decrypted
        else byteAtATimeHelper oracle decrypted prefix skipBlocks stopLength
     where
-        decrypted = decryptedSoFar `B.snoc` (((traceShow $ "nextByte: " ++ (show $ B.singleton nextByte)))$ nextByte)
+        decrypted = decryptedSoFar `B.snoc` nextByte
         nextByte = decryptNextByte oracle decryptedSoFar prefix skipBlocks
 
 byteAtATime :: Oracle -> B.ByteString
 byteAtATime oracle = byteAtATimeHelper 
                         oracle 
                         B.empty 
-                        ((traceShow $ "prefix length: " ++ (show $ B.length prefix))$ prefix)
+                        prefix
                         skipBlocks 
                         lengthOfUnknown
     where 

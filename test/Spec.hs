@@ -13,6 +13,7 @@ import qualified Challenge10 as C10
 import qualified Challenge11 as C11
 import qualified Challenge12 as C12
 import qualified Challenge13 as C13
+import qualified Challenge14 as C14
 
 
 challenge1Test = TestCase 
@@ -104,6 +105,14 @@ challenge13Test = TestCase
                       True
                       C13.challenge13
 
+challenge14Test = TestCase
+              $ do 
+                  result <- C14.challenge14
+                  assertEqual
+                      "Challenge 14: Byte-at-a-time ECB decryption (Harder)"
+                      (True, ["Rollin'", "in"])
+                      result
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -117,6 +126,7 @@ testList = TestList [ challenge1Test
                     , challenge11Test
                     , challenge12Test
                     , challenge13Test
+                    , challenge14Test
                     ]
 main :: IO ()
 main = do
