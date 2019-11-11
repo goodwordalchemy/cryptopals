@@ -1,3 +1,5 @@
+module Challenge16(challenge16) where
+
 import Crypto.Cipher(AES128)
 import Data.Bits(xor)
 import qualified Data.ByteString as B
@@ -50,7 +52,7 @@ encryptedUserInput device userIn = encryptedIn
 oracle :: Device -> B.ByteString -> Bool
 oracle device encryptedIn = hasAdminString
     where
-        decryptedIn = traceShowId $ device Decryption encryptedIn
+        decryptedIn = device Decryption encryptedIn
         targetString = BC.pack ";admin=true;" 
         hasAdminString = Lib.isSubstring targetString decryptedIn
 
@@ -96,10 +98,10 @@ getReplacements prevBlock = replacements
         letterAsWord8 letter = ((fromIntegral $ ord letter)::Word8)
 
 precedingBlockForAttack :: Device -> B.ByteString -> B.ByteString
-precedingBlockForAttack device cipherText = (trace $ "attackBlock:" ++ show attackBlock)$ attackBlock
+precedingBlockForAttack device cipherText = attackBlock
     where
         prevBlockIdx = (B.length prefix) `div` 16
-        prevBlock = (trace $ "prevBlock:" ++ show (nthBlock16 prevBlockIdx cipherText))$ nthBlock16 prevBlockIdx cipherText
+        prevBlock = nthBlock16 prevBlockIdx cipherText
 
         attackBlock = replaceAtIndices replacements prevBlock
 
@@ -118,7 +120,7 @@ replaceBlock n fullOrig replacement = replaced
         
 -- NOTE: assumes length of prefix is mutliple of 16
 getAttackString :: Device -> B.ByteString
-getAttackString device = (trace $ "before:"++ (show $ nthBlock16 prevBlockIdx origCipherText) ++ "\nafter:" ++ (show $ nthBlock16 prevBlockIdx replaced) ++ "\nbefore(orig):"++ (show $ nthBlock16 (1+prevBlockIdx) origCipherText) ++ "\nafter(orig):" ++ (show $ nthBlock16 (1+prevBlockIdx) replaced))$ replaced
+getAttackString device = replaced
     where
         replaced = replaceBlock prevBlockIdx origCipherText replacement 
         prevBlockIdx = B.length prefix `div` 16
@@ -143,11 +145,16 @@ testDecryptedUserInput = do
         decrypted = device Decryption encrypted
     print $ "Decrypted: " ++ show decrypted
 
-testAttack :: IO ()
-testAttack = do
+challenge16 :: IO Bool
+challenge16 = do
     device <- getCBCEncryptionDevice
     let attackString = getAttackString device
         result = oracle device attackString
+    return result
+
+testAttack :: IO ()
+testAttack = do
+    result <- challenge16
     print $ "oracle gives: " ++ show result
     
 main :: IO ()
