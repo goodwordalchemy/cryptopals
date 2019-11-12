@@ -31,14 +31,14 @@ getConstant16ByteString seed = key
 
 
 
-iv :: B.ByteString
-iv = getConstant16ByteString 2
+aesIv :: B.ByteString
+aesIv = getConstant16ByteString 2
 
 aesKey :: B.ByteString
 aesKey = getConstant16ByteString 1
 
-getCBCEncryptionDevice :: Device
-getCBCEncryptionDevice = device
+getCBC :: B.ByteString -> Device
+getCBC iv = device
     where 
         aes = Lib.initAES128 aesKey
 
@@ -52,9 +52,9 @@ getCBCEncryptionDevice = device
 -}
 
 padAndEncrypt :: B.ByteString -> (B.ByteString, B.ByteString)
-padAndEncrypt target = (iv, encrypted)
+padAndEncrypt target = (aesIv, encrypted)
     where
-        encrypted = getCBCEncryptionDevice Encryption paddedTarget
+        encrypted = getCBC aesIv Encryption paddedTarget
         paddedTarget = Lib.padToMultiple target 16
 
 encryptedTarget :: (B.ByteString, B.ByteString)
@@ -62,27 +62,27 @@ encryptedTarget = padAndEncrypt target
     where
         target = targets !! 0
 
-paddingIsValid :: B.ByteString -> Bool
-paddingIsValid  encrypted = case Lib.stripValidPadding decrypted of
+paddingIsValid :: B.ByteString -> B.ByteString -> Bool
+paddingIsValid iv encrypted = case Lib.stripValidPadding decrypted of
         Right x -> True
         Left y -> False
     where
-        decrypted = getCBCEncryptionDevice Decryption encrypted
+        decrypted = getCBC iv Decryption encrypted
 
 -- Attack
+
 
 -- Tests --
 
 testEncryptionAndDecryption :: IO ()
 testEncryptionAndDecryption = do
     let target = BC.pack "test123"
-        (_, encrypted) = padAndEncrypt target
-        result = paddingIsValid encrypted
+        (iv, encrypted) = padAndEncrypt target
+        result = paddingIsValid iv encrypted
 
         target' = BC.pack "test123\09\08\09\09\09\09\09\09\09"
-        (_, encrypted') = padAndEncrypt target'
-        result' = paddingIsValid encrypted'
-    print $ getCBCEncryptionDevice Decryption encrypted'
+        (iv', encrypted') = padAndEncrypt target'
+        result' = paddingIsValid iv encrypted'
     print $ (result, result')
 
 main :: IO ()
