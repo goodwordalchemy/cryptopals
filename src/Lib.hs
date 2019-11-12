@@ -4,6 +4,7 @@ module Lib ( mapWithOrig
            , chunks16
            , nthChunk16
            , findRepetitionIndex
+           , replaceAtIndex
            , replaceAtIndices
            , replaceBlock
            , base64ToBytes

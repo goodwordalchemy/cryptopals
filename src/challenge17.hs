@@ -69,16 +69,21 @@ paddingIsValid  encrypted = case Lib.stripValidPadding decrypted of
     where
         decrypted = getCBCEncryptionDevice Decryption encrypted
 
+-- Attack
+
+-- Tests --
+
 testEncryptionAndDecryption :: IO ()
 testEncryptionAndDecryption = do
     let target = BC.pack "test123"
         (_, encrypted) = padAndEncrypt target
         result = paddingIsValid encrypted
 
-        encrypted' = 
-
-    print $ result1
-
+        target' = BC.pack "test123\09\08\09\09\09\09\09\09\09"
+        (_, encrypted') = padAndEncrypt target'
+        result' = paddingIsValid encrypted'
+    print $ getCBCEncryptionDevice Decryption encrypted'
+    print $ (result, result')
 
 main :: IO ()
 main = do
