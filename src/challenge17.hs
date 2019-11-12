@@ -8,6 +8,9 @@ import qualified Lib
 data CipherDirection = Encryption | Decryption
 type Device = CipherDirection -> B.ByteString -> B.ByteString
 
+charToWord8 :: Char -> Word8
+charToWord8 c = ((fromIntegral $ ord c)::Word8)
+
 targets :: [B.ByteString]
 targets = map (Lib.base64ToBytes . BC.pack) raws
     where 
@@ -70,7 +73,103 @@ paddingIsValid iv encrypted = case Lib.stripValidPadding decrypted of
         decrypted = getCBC iv Decryption encrypted
 
 -- Attack
+paddingOracleAttack
+    :: (B.ByteString -> B.ByteString -> Bool)
+    -> B.ByteString
+    -> B.ByteString
+    -> B.ByteString
+paddingOracleAttack getOracleFunc iv cipherText = decrypted
+    where 
+        decrypted = headBlock `B.append` (B.concat tailBlocks)
+        headBlock = decryptFirstBlock getOracleFunc iv (head chunks)
+        tailBlocks = decryptBlocks (getOracleFunc iv) chunks [1..nChunks-1]
 
+        nChunks = length chunks
+        chunks = Lib.chunks16 cipherText
+
+decryptFirstBlock 
+    :: (B.ByteString -> B.ByteString -> Bool)
+    -> B.ByteString
+    -> B.ByteString
+decryptFirstBlock getOracleFunc iv cipherText = decrypted
+    where
+        decrypted = 
+
+firstBlockIndexSolution
+    :: (B.ByteString -> B.ByteString -> Bool)
+    -> [(Word8, Word8, Word8)]
+    -> B.ByteString 
+    -> (Word8, Word8, Word8)
+firstBlockIndexSolution getOracleFunc soFar firstBlock = (c', i, p)
+    where
+        c' = charToSatisfyPadding'iv 
+                getOracleFunc
+                prevBlockEnd
+                firstBlock
+                0
+
+        prevBlockEnd = B.pack $ map (xor paddingChar) is
+        (c's, is, ps) = unzip3 soFar
+        paddingChar = (fromIntegral $ 1 + knownLength)::Word8 
+        knownLength = length soFar
+
+blockAtIndexSolution
+    :: (B.ByteString -> Bool)
+    -> [(Word8, Word8, Word8)]
+    -> Int
+    -> [B.ByteString]
+    -> (Word8, Word8, Word8) -- (C', I, P)
+blockAtIndexSolution oracle soFar blockIdx blocks = (c', i, p)
+    where
+        p = c `xor` i
+        c = (curBlock !! (16 - 1 - knownLength))
+        i = paddingChar `xor` c'
+        c' = charToSatisfyPadding 
+                oracle 
+                before 
+                prevBlockEnd 
+                curBlock 
+                0
+
+        curblock = blocks !! blockIdx
+        before = if blockIdx < 2 then B.empty
+                                 else B.concat 
+                                    $ fst 
+                                    $ splitAt (blockIdx-1) blocks
+        
+        prevBlockEnd = B.pack $ map (xor paddingChar) is
+        (c's, is, ps) = unzip3 soFar
+        paddingChar = (fromIntegral $ 1 + knownLength)::Word8 
+        knownLength = length soFar
+
+charToSatisfyPadding'iv 
+    :: (B.ByteString -> B.ByteString -> Bool)
+    -> B.ByteString
+    -> B.ByteString
+    -> Word8
+    -> Word8
+charToSatisfyPadding'iv getOracleFunc ivEnd firstBlock curChar = ...
+
+charToSatisfyPadding 
+    :: (B.ByteString -> Bool)
+    -> B.ByteString
+    -> B.ByteString
+    -> B.ByteString
+    -> Word8
+    -> Word8
+charToSatisfyPadding oracle before prevBlockEnd curBlock curChar
+  | satisfied = curChar
+  | curChar == 255 = error "Could not find character to satisfy oracle"
+  | otherwise = charToSatisfyPadding 
+                    oracle 
+                    before 
+                    prevBlockEnd 
+                    curBlock 
+                    (1+curChar)
+    where
+        satisfied = oracle (B.concat [before, prevBlock, curBlock])
+        prevBlock = prefix `B.append` (curChar `B.cons` prevBlockEnd)
+        prefix = B.replicate (16 - 1 - (B.length prevBlockEnd)) 'A'
 
 -- Tests --
 
