@@ -20,6 +20,7 @@ module Lib ( mapWithOrig
            , mostLikelyXorKey
            , padToLength
            , padToMultiple
+           , stripValidPadding
            , detectECB
            , initAES128
            , ecbDecryption
@@ -264,6 +265,17 @@ padToMultiple text ofM
         q = textLength `div` ofM
         textLength = B.length text
 
+stripValidPadding :: B.ByteString -> Either String B.ByteString
+stripValidPadding text
+  | B.length lastChunk /= 16 = Left "block is not 16 bytes long"
+  | lastCharVal > 16 = Right text
+  | B.all (== lastChar) paddedPart = Right unpaddedPart
+  | otherwise = Left ("block is incorrectly padded" ++ show lastChunk)
+  where 
+      lastChar = B.last text
+      lastCharVal = (fromIntegral $ lastChar)::Int
+      lastChunk = last $ Lib.chunks16 text
+      (unpaddedPart, paddedPart) = B.splitAt (16-lastCharVal) lastChunk
 
 -- AES tools
 detectECB :: B.ByteString -> Bool
