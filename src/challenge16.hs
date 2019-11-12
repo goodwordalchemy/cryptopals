@@ -66,16 +66,6 @@ nBytePayload n = BC.replicate n fillerChar
 xorChars :: Char -> Char -> Word8
 xorChars a b = fromIntegral (ord a `xor` ord b)
 
-replaceAtIndex :: Int -> Word8 -> B.ByteString -> B.ByteString
-replaceAtIndex idx c text = (before `B.snoc` c) `B.append` rest
-    where
-        rest = B.tail at
-        (before, at) = B.splitAt idx text
-
-replaceAtIndices :: [(Int, Word8)] -> B.ByteString -> B.ByteString
-replaceAtIndices [] text = text
-replaceAtIndices ((idx, char):ics) text = replaceAtIndices ics newText
-    where newText = replaceAtIndex idx char text
 
 aaas :: String
 aaas = replicate 16 'A'
@@ -103,26 +93,17 @@ precedingBlockForAttack device cipherText = attackBlock
         prevBlockIdx = (B.length prefix) `div` 16
         prevBlock = nthBlock16 prevBlockIdx cipherText
 
-        attackBlock = replaceAtIndices replacements prevBlock
+        attackBlock = Lib.replaceAtIndices replacements prevBlock
 
         replacements = getReplacements prevBlock 
         
 
-replaceBlock :: Int -> B.ByteString -> B.ByteString -> B.ByteString
-replaceBlock n fullOrig replacement = replaced
-    where
-        blocks = Lib.chunks16 fullOrig
-        (start, at) = splitAt n blocks
-        (_, rest) = splitAt 1 at
-        front = B.concat start
-        back = B.concat rest
-        replaced = B.concat [front, replacement, back]
         
 -- NOTE: assumes length of prefix is mutliple of 16
 getAttackString :: Device -> B.ByteString
 getAttackString device = replaced
     where
-        replaced = replaceBlock prevBlockIdx origCipherText replacement 
+        replaced = Lib.replaceBlock prevBlockIdx origCipherText replacement 
         prevBlockIdx = B.length prefix `div` 16
         replacement = precedingBlockForAttack device origCipherText
         origCipherText = encryptedUserInput device payload

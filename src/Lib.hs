@@ -4,6 +4,8 @@ module Lib ( mapWithOrig
            , chunks16
            , nthChunk16
            , findRepetitionIndex
+           , replaceAtIndices
+           , replaceBlock
            , base64ToBytes
            , bytesToBase64
            , hexToBytes
@@ -92,6 +94,26 @@ findRepetitionIndex text = if (length idxs) > 0
                                else Nothing
     where idxs = findRepetitionIndices text
 
+replaceAtIndex :: Int -> Word8 -> B.ByteString -> B.ByteString
+replaceAtIndex idx c text = (before `B.snoc` c) `B.append` rest
+    where
+        rest = B.tail at
+        (before, at) = B.splitAt idx text
+
+replaceAtIndices :: [(Int, Word8)] -> B.ByteString -> B.ByteString
+replaceAtIndices [] text = text
+replaceAtIndices ((idx, char):ics) text = replaceAtIndices ics newText
+    where newText = replaceAtIndex idx char text
+
+replaceBlock :: Int -> B.ByteString -> B.ByteString -> B.ByteString
+replaceBlock n fullOrig replacement = replaced
+    where
+        blocks = Lib.chunks16 fullOrig
+        (start, at) = splitAt n blocks
+        (_, rest) = splitAt 1 at
+        front = B.concat start
+        back = B.concat rest
+        replaced = B.concat [front, replacement, back]
 
 -- Base64 functions
 base64ToBytes :: B.ByteString -> B.ByteString
