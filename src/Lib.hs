@@ -23,6 +23,7 @@ module Lib ( mapWithOrig
            , mostLikelyXorKey
            , padToLength
            , padToMultiple
+           , pk7Pad
            , stripValidPadding
            , detectECB
            , initAES128
@@ -287,6 +288,11 @@ padToMultiple text ofM
         floor = q * ofM
         q = textLength `div` ofM
         textLength = B.length text
+
+pk7Pad :: B.ByteString -> B.ByteString
+pk7Pad text 
+  | B.length text `mod` 16 == 0 = text `B.append` (B.replicate 16 16)
+  | otherwise = padToLength text 16
 
 stripValidPadding :: B.ByteString -> Either String B.ByteString
 stripValidPadding text = case fixedLastChunk of

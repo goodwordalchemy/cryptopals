@@ -61,7 +61,7 @@ padAndEncrypt :: B.ByteString -> (B.ByteString, B.ByteString)
 padAndEncrypt target = (aesIv, encrypted)
     where
         encrypted = getCBC aesIv Encryption paddedTarget
-        paddedTarget = Lib.padToMultiple target 16
+        paddedTarget = Lib.pk7Pad target
 
 encryptedTarget :: (B.ByteString, B.ByteString)
 encryptedTarget = padAndEncrypt target
