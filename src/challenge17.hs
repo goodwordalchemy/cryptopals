@@ -102,25 +102,27 @@ decryptFirstBlock getOracleFunc iv cipherText = B.pack decrypted
         combineSolutions _ acc = (firstBlockIndexSolution 
                                         getOracleFunc
                                         acc
+                                        iv
                                         cipherText):acc
                                         
 firstBlockIndexSolution
     :: (B.ByteString -> B.ByteString -> Bool)
     -> [(Word8, Word8, Word8)]
     -> B.ByteString 
+    -> B.ByteString
     -> (Word8, Word8, Word8)
-firstBlockIndexSolution getOracleFunc soFar firstBlock = (c', i, p)
+firstBlockIndexSolution getOracleFunc soFar iv firstBlock = (c', i, p)
     where
         p = c `xor` i
-        c = (firstBlock `B.index` (16 - 1 - knownLength))
+        c = (iv `B.index` (16 - 1 - knownLength))
         i = paddingChar `xor` ((trace $ "char that satisfied padding:" ++ show c') c')
         c' = charToSatisfyPadding'iv 
                 getOracleFunc
-                prevBlockEnd
+                iv'End
                 firstBlock
                 0
 
-        prevBlockEnd = B.pack $ map (xor paddingChar) is
+        iv'End = B.pack $ map (xor paddingChar) is
         (c's, is, ps) = unzip3 soFar
         paddingChar = (fromIntegral $ 1 + knownLength)::Word8 
         knownLength = length soFar
