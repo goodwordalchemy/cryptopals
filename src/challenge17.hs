@@ -1,7 +1,7 @@
 import Data.Bits(xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.Char(ord)
+import Data.Char(chr, ord)
 import Data.Word(Word8)
 import Debug.Trace
 import System.Random(mkStdGen)
@@ -56,21 +56,21 @@ getCBC iv = device
  to this function, and I will have to maintain a mapping of ciphertexts
  to decryption states
 -}
-
-padAndEncrypt :: B.ByteString -> (B.ByteString, B.ByteString)
-padAndEncrypt target = (aesIv, encrypted)
-    where
-        encrypted = getCBC aesIv Encryption paddedTarget
-        paddedTarget = Lib.pk7Pad target
-
 encryptedTarget :: (B.ByteString, B.ByteString)
 encryptedTarget = padAndEncrypt target
     where
         target = targets !! 0
 
+
+padAndEncrypt :: B.ByteString -> (B.ByteString, B.ByteString)
+padAndEncrypt target = (trace $ "\nencrypted:" ++ show encrypted ++ ", iv:" ++ show aesIv)$ (aesIv, encrypted)
+    where
+        encrypted = getCBC aesIv Encryption ((trace $ "\npaddedTarget:"++show paddedTarget) paddedTarget)
+        paddedTarget = Lib.pk7Pad target
+
 paddingIsValid :: B.ByteString -> B.ByteString -> Bool
 paddingIsValid iv encrypted = case Lib.stripValidPadding decrypted of
-        Right x -> True
+        Right x -> (trace $ "decrytion that satisfied padding:" ++ show x)$ True
         Left y -> False
     where
         decrypted = getCBC iv Decryption encrypted
@@ -128,11 +128,12 @@ firstBlockIndexSolution
     -> B.ByteString 
     -> B.ByteString
     -> (Word8, Word8, Word8)
-firstBlockIndexSolution getOracleFunc soFar iv firstBlock = (c', i, p)
+firstBlockIndexSolution getOracleFunc soFar iv firstBlock = (trace $ "\n(c', i, p) that satisfied padding:" ++ (show (c', i, p)) ++ " <=> " ++ (show $ map (chr . fromIntegral) [c', i, p])) 
+                                                          $ (c', i, p)
     where
-        p = c `xor` i
+        p = (trace $ "c =" ++ show c ++ ", pc=" ++ show paddingChar)$ c `xor` i
         c = (iv `B.index` (16 - 1 - knownLength))
-        i = paddingChar `xor` ((trace $ "char that satisfied padding:" ++ show c') c')
+        i = paddingChar `xor` c'
         c' = charToSatisfyPadding'iv 
                 getOracleFunc
                 iv'End
@@ -240,6 +241,11 @@ testDecryptTwoBlocks = do
         result = paddingOracleAttack paddingIsValid testIv testCipher
     print $ "This should be legible ==> " ++ show result
 
+testDecrypt16ByteBlocks :: IO ()
+testDecrypt16ByteBlocks = do
+    let (testIv, testCipher) = padAndEncrypt (BC.pack "12345678901234561234567890123456")
+        result = paddingOracleAttack paddingIsValid testIv testCipher
+    print $ "This should be legible ==> " ++ show result
 
 testDecryptingTarget :: IO ()
 testDecryptingTarget = do
@@ -247,9 +253,19 @@ testDecryptingTarget = do
         result = paddingOracleAttack paddingIsValid iv encrypted
     print $ "What is this? ==> " ++ show result
 
+getLengthResult :: Int -> String
+getLengthResult l = let (testIv, testCipher) = padAndEncrypt (BC.replicate l '3')
+                        result = paddingOracleAttack paddingIsValid testIv testCipher
+                    in show l ++ "This should be legible ==> " ++ show result
+
+decryptTargets :: [B.ByteString]
+decryptTargets = map encryptThenDecrypt targets
+    where encryptThenDecrypt text = let (iv, cipher) = padAndEncrypt text
+                                    in paddingOracleAttack 
+                                          paddingIsValid 
+                                          iv 
+                                          cipher
+
 main :: IO ()
 main = do
-    -- testEncryptionAndDecryption
-    -- testDecryptFirstBlock
-    -- testDecryptTwoBlocks
-    testDecryptingTarget
+    print decryptTargets

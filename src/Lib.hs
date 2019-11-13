@@ -279,27 +279,24 @@ padToLength text size = B.append text padding
 
 padToMultiple :: B.ByteString -> Int -> B.ByteString
 padToMultiple text ofM 
-    | B.length text == ofM = text
-    | otherwise = padToLength text lengthToPad
+  | remainder == 0 = text
+  | otherwise = padToLength text lengthToPad
     where 
-        lengthToPad = if floor == textLength 
-                      then textLength 
-                      else (q+1) * ofM
-        floor = q * ofM
-        q = textLength `div` ofM
+        lengthToPad = textLength + (ofM - remainder)
+        remainder = textLength `mod` ofM
         textLength = B.length text
 
 pk7Pad :: B.ByteString -> B.ByteString
 pk7Pad text 
   | B.length text `mod` 16 == 0 = text `B.append` (B.replicate 16 16)
-  | otherwise = padToLength text 16
+  | otherwise = padToMultiple text 16
 
 stripValidPadding :: B.ByteString -> Either String B.ByteString
 stripValidPadding text = case fixedLastChunk of
                            Right c -> Right $ B.concat (firstChunks++[c])
                            Left msg -> Left msg
     where
-        fixedLastChunk = stripValidPaddingChunk lastChunk
+        fixedLastChunk = (trace $ "\nlast chunk before stripping:" ++ show lastChunk)$ stripValidPaddingChunk lastChunk
         lastChunk = lastChunks !! 0
         (firstChunks, lastChunks) = splitAt (length chunks - 1) chunks
         chunks = chunks16 text
@@ -308,13 +305,17 @@ stripValidPadding text = case fixedLastChunk of
 stripValidPaddingChunk :: B.ByteString -> Either String B.ByteString
 stripValidPaddingChunk text
   | B.length text /= 16 = Left "block is not 16 bytes long"
-  | lastCharVal > 16 = Left "last block must be padded"
-  | B.all (== lastChar) paddedPart = Right unpaddedPart
+  | lastCharVal < 1 || lastCharVal > 16 = Left "last block must be padded"
+  | correctPadding = Right unpaddedPart
   | otherwise = Left ("block is incorrectly padded" ++ show text)
   where 
+      correctPadding = correctPaddingChar && allMatchLastChar 
+      allMatchLastChar = B.all (== lastChar) paddedPart
+      correctPaddingChar = lastCharVal == B.length paddedPart
+
+      (unpaddedPart, paddedPart) = B.splitAt (16-lastCharVal) text
       lastCharVal = (fromIntegral $ lastChar)::Int
       lastChar = B.last text
-      (unpaddedPart, paddedPart) = B.splitAt (16-lastCharVal) text
 
 -- AES tools
 detectECB :: B.ByteString -> Bool
