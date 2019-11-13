@@ -296,7 +296,7 @@ stripValidPadding text = case fixedLastChunk of
                            Right c -> Right $ B.concat (firstChunks++[c])
                            Left msg -> Left msg
     where
-        fixedLastChunk = (trace $ "\nlast chunk before stripping:" ++ show lastChunk)$ stripValidPaddingChunk lastChunk
+        fixedLastChunk = stripValidPaddingChunk lastChunk
         lastChunk = lastChunks !! 0
         (firstChunks, lastChunks) = splitAt (length chunks - 1) chunks
         chunks = chunks16 text

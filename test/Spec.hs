@@ -16,6 +16,7 @@ import qualified Challenge13 as C13
 import qualified Challenge14 as C14
 import qualified Challenge15 as C15
 import qualified Challenge16 as C16
+import qualified Challenge17 as C17
 
 
 challenge1Test = TestCase 
@@ -129,6 +130,12 @@ challenge16Test = TestCase
                       True
                       result
 
+challenge17Test = TestCase
+                $ assertEqual
+                      "Challenge 17: The CBC padding oracle"
+                      True
+                      C17.challenge17
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -145,6 +152,7 @@ testList = TestList [ challenge1Test
                     , challenge14Test
                     , challenge15Test
                     , challenge16Test
+                    , challenge17Test
                     ]
 main :: IO ()
 main = do

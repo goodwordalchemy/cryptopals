@@ -1,3 +1,5 @@
+module Challenge17(challenge17) where
+
 import Data.Bits(xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -63,14 +65,14 @@ encryptedTarget = padAndEncrypt target
 
 
 padAndEncrypt :: B.ByteString -> (B.ByteString, B.ByteString)
-padAndEncrypt target = (trace $ "\nencrypted:" ++ show encrypted ++ ", iv:" ++ show aesIv)$ (aesIv, encrypted)
+padAndEncrypt target = (aesIv, encrypted)
     where
-        encrypted = getCBC aesIv Encryption ((trace $ "\npaddedTarget:"++show paddedTarget) paddedTarget)
+        encrypted = getCBC aesIv Encryption paddedTarget
         paddedTarget = Lib.pk7Pad target
 
 paddingIsValid :: B.ByteString -> B.ByteString -> Bool
 paddingIsValid iv encrypted = case Lib.stripValidPadding decrypted of
-        Right x -> (trace $ "decrytion that satisfied padding:" ++ show x)$ True
+        Right x -> True
         Left y -> False
     where
         decrypted = getCBC iv Decryption encrypted
@@ -128,10 +130,9 @@ firstBlockIndexSolution
     -> B.ByteString 
     -> B.ByteString
     -> (Word8, Word8, Word8)
-firstBlockIndexSolution getOracleFunc soFar iv firstBlock = (trace $ "\n(c', i, p) that satisfied padding:" ++ (show (c', i, p)) ++ " <=> " ++ (show $ map (chr . fromIntegral) [c', i, p])) 
-                                                          $ (c', i, p)
+firstBlockIndexSolution getOracleFunc soFar iv firstBlock = (c', i, p)
     where
-        p = (trace $ "c =" ++ show c ++ ", pc=" ++ show paddingChar)$ c `xor` i
+        p = c `xor` i
         c = (iv `B.index` (16 - 1 - knownLength))
         i = paddingChar `xor` c'
         c' = charToSatisfyPadding'iv 
@@ -265,6 +266,11 @@ decryptTargets = map encryptThenDecrypt targets
                                           paddingIsValid 
                                           iv 
                                           cipher
+
+challenge17 :: Bool
+challenge17 = first9Chars == (BC.pack "000000Now")
+    where first9Chars = fst $ B.splitAt 9 firstTarget
+          firstTarget = decryptTargets !! 0
 
 main :: IO ()
 main = do
