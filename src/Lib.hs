@@ -289,16 +289,26 @@ padToMultiple text ofM
         textLength = B.length text
 
 stripValidPadding :: B.ByteString -> Either String B.ByteString
-stripValidPadding text
-  | B.length lastChunk /= 16 = Left "block is not 16 bytes long"
-  | lastCharVal > 16 = Right text
+stripValidPadding text = case fixedLastChunk of
+                           Right c -> Right $ B.concat (firstChunks++[c])
+                           Left msg -> Left msg
+    where
+        fixedLastChunk = stripValidPaddingChunk lastChunk
+        lastChunk = lastChunks !! 0
+        (firstChunks, lastChunks) = splitAt (length chunks - 1) chunks
+        chunks = chunks16 text
+
+
+stripValidPaddingChunk :: B.ByteString -> Either String B.ByteString
+stripValidPaddingChunk text
+  | B.length text /= 16 = Left "block is not 16 bytes long"
+  | lastCharVal > 16 = Left "last block must be padded"
   | B.all (== lastChar) paddedPart = Right unpaddedPart
-  | otherwise = Left ("block is incorrectly padded" ++ show lastChunk)
+  | otherwise = Left ("block is incorrectly padded" ++ show text)
   where 
-      lastChar = B.last text
       lastCharVal = (fromIntegral $ lastChar)::Int
-      lastChunk = last $ Lib.chunks16 text
-      (unpaddedPart, paddedPart) = B.splitAt (16-lastCharVal) lastChunk
+      lastChar = B.last text
+      (unpaddedPart, paddedPart) = B.splitAt (16-lastCharVal) text
 
 -- AES tools
 detectECB :: B.ByteString -> Bool

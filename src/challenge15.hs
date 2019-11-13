@@ -21,10 +21,28 @@ challenge15 = (validResult, length lefts)
     where
         (lefts, rights) = partitionEithers
                         $ map Lib.stripValidPadding [ validExample
-                                                , failExample1
-                                                , failExample2 ]
+                                                    , failExample1
+                                                    , failExample2 ]
         validResult = BC.unpack $ (rights !! 0)
+
+failExample' :: B.ByteString 
+failExample' = BC.pack "1234567890987654"
+
+validExample' :: B.ByteString
+validExample' = (BC.pack "1234567890987654") `B.append` (B.replicate 16 16)
+
+testFullPadding :: IO ()
+testFullPadding = do
+    print $ "# lefts should be 1:" ++ (show $ length lefts)
+    print $ "# rights should be 1:" ++ (show $ length rights)
+    
+    where
+        (lefts, rights) = partitionEithers
+                        $ map Lib.stripValidPadding [ validExample'
+                                                    , failExample' 
+                                                    ]
 
 main :: IO ()
 main = do
     print challenge15
+    testFullPadding

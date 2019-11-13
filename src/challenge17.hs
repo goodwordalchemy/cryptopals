@@ -3,6 +3,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.Char(ord)
 import Data.Word(Word8)
+import Debug.Trace
 import System.Random(mkStdGen)
 
 import qualified Lib
@@ -112,7 +113,7 @@ firstBlockIndexSolution getOracleFunc soFar firstBlock = (c', i, p)
     where
         p = c `xor` i
         c = (firstBlock `B.index` (16 - 1 - knownLength))
-        i = paddingChar `xor` c'
+        i = paddingChar `xor` ((trace $ "char that satisfied padding:" ++ show c') c')
         c' = charToSatisfyPadding'iv 
                 getOracleFunc
                 prevBlockEnd
