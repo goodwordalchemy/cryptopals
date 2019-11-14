@@ -19,6 +19,7 @@ import qualified Challenge16 as C16
 import qualified Challenge17 as C17
 import qualified Challenge18 as C18
 import qualified Challenge19 as C19
+import qualified Challenge20 as C20
 
 
 challenge1Test = TestCase 
@@ -150,6 +151,14 @@ challenge19Test = TestCase
                       True
                       C19.challenge19
 
+challenge20Test = TestCase
+                $ do
+                    result <- C20.challenge20
+                    assertEqual
+                      "Challenge 20: Break fixed-nonce CTR statistically"
+                      True
+                      result
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -169,6 +178,7 @@ testList = TestList [ challenge1Test
                     , challenge17Test
                     , challenge18Test
                     , challenge19Test
+                    , challenge20Test
                     ]
 main :: IO ()
 main = do

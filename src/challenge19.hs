@@ -1,6 +1,8 @@
 module Challenge19( challenge19
+                  , crackFixedNonceTargets
                   , firstPartOfKey
                   , resultsForKey
+                  , updatedKey
 ) where
 
 import Data.Bits(xor)
@@ -120,25 +122,31 @@ updatedKey targets knownLetters keySoFar = key
     where key = keySoFar `B.append` restOfKey
           restOfKey = B.pack $ map (getKeyLetter targets) knownLetters
 
+crackFixedNonceTargets 
+    :: [B.ByteString] 
+    -> [(Int, Int, Char)] 
+    -> (B.ByteString, [B.ByteString])
+crackFixedNonceTargets targets substitutions = 
+    (secondPassKey, secondPassResults)
+    where 
+        firstPassKey = firstPartOfKey targets
+        firstPassResults = resultsForKey targets firstPassKey
+
+        secondPassKey = updatedKey targets substitutions firstPassKey 
+        secondPassResults = resultsForKey targets secondPassKey
 
 challenge19 :: Bool
-challenge19 = secondPassResults !! 0 == (BC.pack "I have met them at close of day")
+challenge19 = 
+    results !! 0 == (BC.pack "I have met them at close of day")
     where 
-        firstPassKey = firstPartOfKey challenge19Targets
-        firstPassResults = resultsForKey challenge19Targets firstPassKey
-        secondPassKey = updatedKey challenge19Targets knownLetters firstPassKey 
-        secondPassResults = resultsForKey challenge19Targets secondPassKey
-        curKeyLength = B.length secondPassKey
+        (_, results) = crackFixedNonceTargets challenge19Targets knownLetters
 
 main :: IO ()
 main = do
-    let firstPassKey = firstPartOfKey challenge19Targets
-        firstPassResults = resultsForKey challenge19Targets firstPassKey
-        secondPassKey = updatedKey challenge19Targets knownLetters firstPassKey 
-        secondPassResults = resultsForKey challenge19Targets secondPassKey
-        curKeyLength = B.length secondPassKey
-
-    putStrLn $ "results for key length: " ++ show curKeyLength ++ ":"
-    mapM_ print (zip [0..] secondPassResults)
+    putStrLn $ "results for key length: " ++ show keyLength ++ ":"
+    mapM_ print (zip [0..] results)
+    where 
+        keyLength = B.length key
+        (key, results) = crackFixedNonceTargets challenge19Targets knownLetters
         
 
