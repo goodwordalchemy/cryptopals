@@ -1,5 +1,8 @@
+import Data.Bits(xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
+import Data.Char(chr, ord)
+import Data.Word(Word8)
 
 import qualified Lib
 
@@ -48,8 +51,17 @@ targets = map (Lib.base64ToBytes . BC.pack) rawTargets
                      , "QSB0ZXJyaWJsZSBiZWF1dHkgaXMgYm9ybi4="
                      ]
 
-crackFixedNonceTargets :: [B.ByteString] -> [B.ByteString]
-crackFixedNonceTargets targets = firstPass targets
+charToWord8 :: Char -> Word8
+charToWord8 c = (fromIntegral $ ord c)::Word8
+
+word8ToChar :: Word8 -> Char
+word8ToChar w = chr (fromIntegral w)
+
+swapAtIndex :: [a] -> Int -> a -> [a]
+swapAtIndex alist idx swapIn = before ++ [swapIn] ++ after
+    where
+        after = tail rest
+        (before, rest) = splitAt idx alist
 
 firstPass :: [B.ByteString] -> [B.ByteString]
 firstPass targets = decrypted
@@ -58,10 +70,36 @@ firstPass targets = decrypted
         xorKey = BC.pack $ map Lib.mostLikelyXorKey transposed
         transposed = B.transpose targets
 
--- secondPass :: [B.ByteString] -> [B.ByteString] -> [B.ByteString]
--- secondPass targets firstPassResults = substituted
---     where
---         substritude
+secondPass :: [B.ByteString] -> [B.ByteString] -> [B.ByteString]
+secondPass targets firstPassResults = B.transpose substituted
+    where
+        substituted = performSubs substitutions transposed'
+
+        performSubs [] soFar = soFar
+        performSubs ((idx, letter):xs) soFar = 
+            performSubs xs (swapAtIndex soFar idx (Lib.xorWithLetter 
+                                                    (transposed !! idx) 
+                                                    letter))
+
+        transposed' = B.transpose firstPassResults
+        transposed  = B.transpose targets
+
+        substitutions = map colNumKeyPairs rawSubstitions
+
+        colNumKeyPairs (targetNum, colNum, knownLetter) = 
+            (colNum, word8ToChar $ xor
+                                    (ctLetter targetNum colNum) 
+                                    (charToWord8 knownLetter))
+
+        ctLetter row col = targets !! row `B.index` col
+
+        rawSubstitions = [ (0, 20, 'l') -- (target #, col #, knownLetter)
+                         ]
+
+crackFixedNonceTargets :: [B.ByteString] -> [B.ByteString]
+crackFixedNonceTargets targets = secondPass targets firstPassResults
+    where
+        firstPassResults = firstPass targets
 
 challenge19 :: [B.ByteString]
 challenge19 = crackFixedNonceTargets targets
