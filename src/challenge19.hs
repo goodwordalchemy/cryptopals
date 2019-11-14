@@ -3,6 +3,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.Char(chr, ord)
 import Data.Word(Word8)
+import Debug.Trace
 
 import qualified Lib
 
@@ -76,7 +77,7 @@ secondPass targets firstPassResults = B.transpose substituted
         substituted = performSubs substitutions transposed'
 
         performSubs [] soFar = soFar
-        performSubs ((idx, letter):xs) soFar = 
+        performSubs ((idx, letter):xs) soFar = (trace $ "\nletter: " ++ show letter ++ ", idx: " ++ show idx ++ ", before: " ++ show (transposed !! idx) ++ ", after: " ++ show (Lib.xorWithLetter (transposed !! idx) letter))
             performSubs xs (swapAtIndex soFar idx (Lib.xorWithLetter 
                                                     (transposed !! idx) 
                                                     letter))
@@ -84,7 +85,7 @@ secondPass targets firstPassResults = B.transpose substituted
         transposed' = B.transpose firstPassResults
         transposed  = B.transpose targets
 
-        substitutions = map colNumKeyPairs rawSubstitions
+        substitutions = map colNumKeyPairs rawSubstitutions
 
         colNumKeyPairs (targetNum, colNum, knownLetter) = 
             (colNum, word8ToChar $ xor
@@ -93,8 +94,11 @@ secondPass targets firstPassResults = B.transpose substituted
 
         ctLetter row col = targets !! row `B.index` col
 
-        rawSubstitions = [ (0, 20, 'l') -- (target #, col #, knownLetter)
-                         ]
+        -- (target #, col #, knownLetter)
+        rawSubstitutions = [ (10, 20, 'n')
+                           -- , (18, 21, 't')
+                           -- , (1, 23, ' ')
+                           ]
 
 crackFixedNonceTargets :: [B.ByteString] -> [B.ByteString]
 crackFixedNonceTargets targets = secondPass targets firstPassResults
@@ -106,6 +110,6 @@ challenge19 = crackFixedNonceTargets targets
 
 main :: IO ()
 main = do
-    print challenge19
+    mapM_ print challenge19
         
 
