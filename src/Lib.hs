@@ -43,7 +43,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
-import Data.Char(isLetter, toLower, isControl, chr, isPunctuation)
+import Data.Char(isLetter, toLower, isControl, chr, isPunctuation, ord)
 import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -138,16 +138,16 @@ hexStringToBytes = hexToBytes . stringToBytes
 -- String to Bytes Conversions
 
 bytesToString :: B.ByteString -> String
-bytesToString = T.unpack . TE.decodeUtf8With (\_ _ -> Just '�')
+bytesToString = BC.unpack
 
 stringToBytes :: String -> B.ByteString
-stringToBytes = TE.encodeUtf8 . T.pack
+stringToBytes = BC.pack
 
 charToWord8 :: Char -> Word8
-charToWord8 = B.head . TE.encodeUtf8 . T.singleton
+charToWord8 c = (fromIntegral $ ord c)::Word8
 
 word8ToChar :: Word8 -> Char
-word8ToChar = head . T.unpack . TE.decodeUtf8 . B.singleton
+word8ToChar w = chr (fromIntegral w)
 
 -- xor *-cryption
 fixedXOR :: B.ByteString -> B.ByteString -> B.ByteString

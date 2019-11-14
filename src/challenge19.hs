@@ -1,4 +1,7 @@
-module Challenge19(challenge19) where
+module Challenge19( challenge19
+                  , firstPartOfKey
+                  , resultsForKey
+) where
 
 import Data.Bits(xor)
 import qualified Data.ByteString as B
@@ -9,8 +12,8 @@ import Debug.Trace
 
 import qualified Lib
 
-targets :: [B.ByteString]
-targets = map (Lib.base64ToBytes . BC.pack) rawTargets
+challenge19Targets :: [B.ByteString]
+challenge19Targets = map (Lib.base64ToBytes . BC.pack) rawTargets
     where 
         rawTargets = [ "SSBoYXZlIG1ldCB0aGVtIGF0IGNsb3NlIG9mIGRheQ=="
                      , "Q29taW5nIHdpdGggdml2aWQgZmFjZXM="
@@ -121,18 +124,18 @@ updatedKey targets knownLetters keySoFar = key
 challenge19 :: Bool
 challenge19 = secondPassResults !! 0 == (BC.pack "I have met them at close of day")
     where 
-        firstPassKey = firstPartOfKey targets
-        firstPassResults = resultsForKey targets firstPassKey
-        secondPassKey = updatedKey targets knownLetters firstPassKey 
-        secondPassResults = resultsForKey targets secondPassKey
+        firstPassKey = firstPartOfKey challenge19Targets
+        firstPassResults = resultsForKey challenge19Targets firstPassKey
+        secondPassKey = updatedKey challenge19Targets knownLetters firstPassKey 
+        secondPassResults = resultsForKey challenge19Targets secondPassKey
         curKeyLength = B.length secondPassKey
 
 main :: IO ()
 main = do
-    let firstPassKey = firstPartOfKey targets
-        firstPassResults = resultsForKey targets firstPassKey
-        secondPassKey = updatedKey targets knownLetters firstPassKey 
-        secondPassResults = resultsForKey targets secondPassKey
+    let firstPassKey = firstPartOfKey challenge19Targets
+        firstPassResults = resultsForKey challenge19Targets firstPassKey
+        secondPassKey = updatedKey challenge19Targets knownLetters firstPassKey 
+        secondPassResults = resultsForKey challenge19Targets secondPassKey
         curKeyLength = B.length secondPassKey
 
     putStrLn $ "results for key length: " ++ show curKeyLength ++ ":"

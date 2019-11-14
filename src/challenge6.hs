@@ -100,7 +100,7 @@ testHammingDistanceKeySizeOffset = do
     putStrLn $ "This should be 37 ==> " ++ show result
 
 filename :: String
-filename = "../data/6.txt"
+filename = "data/6.txt"
 
 loadEncryptedFile :: IO B.ByteString
 loadEncryptedFile = do
