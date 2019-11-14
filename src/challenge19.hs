@@ -1,3 +1,5 @@
+module Challenge19(challenge19) where
+
 import Data.Bits(xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -64,52 +66,76 @@ swapAtIndex alist idx swapIn = before ++ [swapIn] ++ after
         after = tail rest
         (before, rest) = splitAt idx alist
 
-firstPass :: [B.ByteString] -> [B.ByteString]
-firstPass targets = decrypted
+truncateToLength :: Int -> B.ByteString -> B.ByteString
+truncateToLength n = fst . B.splitAt n
+
+firstPartOfKey :: [B.ByteString] -> B.ByteString
+firstPartOfKey targets = xorKey
     where
-        decrypted = map (Lib.fixedXOR xorKey) targets
         xorKey = BC.pack $ map Lib.mostLikelyXorKey transposed
-        transposed = B.transpose targets
+        transposed = B.transpose truncated
 
-secondPass :: [B.ByteString] -> [B.ByteString] -> [B.ByteString]
-secondPass targets firstPassResults = B.transpose substituted
-    where
-        substituted = performSubs substitutions transposed'
+        truncated = map (truncateToLength shortestLength) targets
+        shortestLength =  minimum $ map B.length targets
 
-        performSubs [] soFar = soFar
-        performSubs ((idx, letter):xs) soFar = (trace $ "\nletter: " ++ show letter ++ ", idx: " ++ show idx ++ ", before: " ++ show (transposed !! idx) ++ ", after: " ++ show (Lib.xorWithLetter (transposed !! idx) letter))
-            performSubs xs (swapAtIndex soFar idx (Lib.xorWithLetter 
-                                                    (transposed !! idx) 
-                                                    letter))
+resultsForKey :: [B.ByteString] -> B.ByteString -> [B.ByteString]
+resultsForKey targets key = map (Lib.fixedXOR key) targets
 
-        transposed' = B.transpose firstPassResults
-        transposed  = B.transpose targets
+knownLetters :: [(Int, Int, Char)] -- (row, col, letter)
+knownLetters = [ (10, 20, 'n')
+               , (21, 21, 'f')
+               , (21, 22, 'u')
+               , (21, 23, 'l')
+               , (14, 24, 'e')
+               , (14, 25, 'r')
+               , (14, 26, 'l')
+               , (14, 27, 'y')
+               , (29, 28, 'g')
+               , (29, 29, 'h')
+               , (0, 30, 'y')
+               , (6, 31, 'd')
+               , (27, 32, 'd')
+               , (4, 33, 'e')
+               , (4, 34, 'a')
+               , (4, 35, 'd')
+               , (37, 36, 'n')
+               , (37, 37, ',')
+               ]
 
-        substitutions = map colNumKeyPairs rawSubstitutions
+getKeyLetter :: [B.ByteString] -> (Int, Int, Char) -> Word8
+getKeyLetter targets (targetNum, colNum, knownLetter) = keyLetter
+    where 
+        keyLetter = ctLetter `xor` (charToWord8 knownLetter)
+        ctLetter = targets !! targetNum `B.index` colNum
 
-        colNumKeyPairs (targetNum, colNum, knownLetter) = 
-            (colNum, word8ToChar $ xor
-                                    (ctLetter targetNum colNum) 
-                                    (charToWord8 knownLetter))
+updatedKey
+    :: [B.ByteString]
+    -> [(Int, Int, Char)] 
+    -> B.ByteString 
+    -> B.ByteString
+updatedKey targets knownLetters keySoFar = key
+    where key = keySoFar `B.append` restOfKey
+          restOfKey = B.pack $ map (getKeyLetter targets) knownLetters
 
-        ctLetter row col = targets !! row `B.index` col
 
-        -- (target #, col #, knownLetter)
-        rawSubstitutions = [ (10, 20, 'n')
-                           -- , (18, 21, 't')
-                           -- , (1, 23, ' ')
-                           ]
-
-crackFixedNonceTargets :: [B.ByteString] -> [B.ByteString]
-crackFixedNonceTargets targets = secondPass targets firstPassResults
-    where
-        firstPassResults = firstPass targets
-
-challenge19 :: [B.ByteString]
-challenge19 = crackFixedNonceTargets targets
+challenge19 :: Bool
+challenge19 = secondPassResults !! 0 == (BC.pack "I have met them at close of day")
+    where 
+        firstPassKey = firstPartOfKey targets
+        firstPassResults = resultsForKey targets firstPassKey
+        secondPassKey = updatedKey targets knownLetters firstPassKey 
+        secondPassResults = resultsForKey targets secondPassKey
+        curKeyLength = B.length secondPassKey
 
 main :: IO ()
 main = do
-    mapM_ print challenge19
+    let firstPassKey = firstPartOfKey targets
+        firstPassResults = resultsForKey targets firstPassKey
+        secondPassKey = updatedKey targets knownLetters firstPassKey 
+        secondPassResults = resultsForKey targets secondPassKey
+        curKeyLength = B.length secondPassKey
+
+    putStrLn $ "results for key length: " ++ show curKeyLength ++ ":"
+    mapM_ print (zip [0..] secondPassResults)
         
 

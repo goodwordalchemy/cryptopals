@@ -18,6 +18,7 @@ import qualified Challenge15 as C15
 import qualified Challenge16 as C16
 import qualified Challenge17 as C17
 import qualified Challenge18 as C18
+import qualified Challenge19 as C19
 
 
 challenge1Test = TestCase 
@@ -143,6 +144,12 @@ challenge18Test = TestCase
                       (True, True)
                       C18.challenge18
 
+challenge19Test = TestCase
+                $ assertEqual
+                      "Challenge 19: Break fixed-nonce CTR mode using substitutions"
+                      True
+                      C19.challenge19
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -161,6 +168,7 @@ testList = TestList [ challenge1Test
                     , challenge16Test
                     , challenge17Test
                     , challenge18Test
+                    , challenge19Test
                     ]
 main :: IO ()
 main = do
