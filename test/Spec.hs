@@ -17,6 +17,7 @@ import qualified Challenge14 as C14
 import qualified Challenge15 as C15
 import qualified Challenge16 as C16
 import qualified Challenge17 as C17
+import qualified Challenge18 as C18
 
 
 challenge1Test = TestCase 
@@ -136,6 +137,12 @@ challenge17Test = TestCase
                       True
                       C17.challenge17
 
+challenge18Test = TestCase
+                $ assertEqual
+                      "Challenge 18: Implement CTR, the stream cipher mode"
+                      (True, True)
+                      C18.challenge18
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -153,6 +160,7 @@ testList = TestList [ challenge1Test
                     , challenge15Test
                     , challenge16Test
                     , challenge17Test
+                    , challenge18Test
                     ]
 main :: IO ()
 main = do

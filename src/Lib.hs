@@ -34,10 +34,11 @@ module Lib ( mapWithOrig
            , getRandomAESKey
            , getRandomLetterStream
            , randomByteString
+           , getCTRDevice
            ) where
 
 import Crypto.Cipher
-import Data.Bits(xor)
+import Data.Bits(xor, shift, (.&.))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Base16 as B16
@@ -383,4 +384,44 @@ getRandomAESKey gen = (key, gen')
         (key, _) = randomByteString letterStream 16
         (letterStream, gen') = getRandomLetterStream gen
 
+littleEndian :: Int -> B.ByteString
+littleEndian num = B.pack 
+                 $ map (fromIntegral . last2BytesShifted)
+                 $ map (*8) [0..7]
+    where
+        last2BytesShifted s = (num `shift` (-s)) .&. 0xFF
 
+
+ctrStep 
+    :: AES128
+    -> B.ByteString 
+    -> Int 
+    -> B.ByteString 
+    -> B.ByteString
+    -> B.ByteString
+ctrStep ctx nonceBytes count text acc
+  | text == B.empty = acc
+  | otherwise = ctrStep ctx nonceBytes (count+1) nextText soFar
+    where
+        soFar = acc `B.append` cipher
+        cipher = fixedXOR encrypted thisText
+        
+        (thisText, nextText) = B.splitAt 16 text
+
+        encrypted = ecbEncryption ctx ivCounterPair
+        ivCounterPair = nonceBytes `B.append` countBytes
+        countBytes = littleEndian count
+
+ctrEncryption :: AES128 -> Int -> B.ByteString -> B.ByteString
+ctrEncryption ctx nonce text = ctrStep 
+                                    ctx nonceBytes 0 text B.empty
+    where nonceBytes = littleEndian nonce
+
+ctrDecryption :: AES128 -> Int -> B.ByteString -> B.ByteString
+ctrDecryption = ctrEncryption
+
+getCTRDevice :: B.ByteString -> Int -> B.ByteString -> B.ByteString
+getCTRDevice key 
+  | B.length key /= 16 = error "AES128 keys must be 16 bytes"
+  | otherwise = ctrEncryption aes
+    where aes = initAES128 key
