@@ -31,7 +31,7 @@ challenge20 = do
     results <- challenge20Results
     let lastLast = BC.last . last $ results
         lastFirst = BC.head . last $ results
-    return $ (lastLast == 'l') && (lastFirst == 'A')
+    return $ (lastLast == 'a') && (lastFirst == 'A')
 
 main :: IO ()
 main = do
