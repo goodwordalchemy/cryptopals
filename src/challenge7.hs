@@ -24,4 +24,4 @@ challenge7 = do
     return $ take 2 . words $ Lib.bytesToString result
 
 main = do
-    print <$> decryptFile "data/7.txt"
+    print <$> decryptFile "../data/7.txt"

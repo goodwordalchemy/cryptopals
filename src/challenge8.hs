@@ -12,7 +12,7 @@ findECBLines candidates = map fst
                         $ map Lib.detectECB candidates
 
 filename :: String
-filename = "data/8.txt"
+filename = "../data/8.txt"
 
 loadEncryptedFile :: IO [B.ByteString]
 loadEncryptedFile = do

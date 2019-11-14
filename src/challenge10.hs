@@ -39,7 +39,7 @@ testCbc = do
     BC.putStrLn encrypted
 
 filename :: String
-filename = "data/10.txt"
+filename = "../data/10.txt"
 
 loadEncryptedFile :: IO BC.ByteString
 loadEncryptedFile = do
