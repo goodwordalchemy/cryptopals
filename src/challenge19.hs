@@ -1,8 +1,5 @@
 module Challenge19( challenge19
                   , crackFixedNonceTargets
-                  , firstPartOfKey
-                  , resultsForKey
-                  , updatedKey
 ) where
 
 import Data.Bits(xor)
@@ -113,33 +110,58 @@ getKeyLetter targets (targetNum, colNum, knownLetter) = keyLetter
         keyLetter = ctLetter `xor` (charToWord8 knownLetter)
         ctLetter = targets !! targetNum `B.index` colNum
 
+substituteLetter 
+    :: [B.ByteString] 
+    -> (Int, Int, Char) 
+    -> B.ByteString 
+    -> B.ByteString
+substituteLetter targets (targetNum, colNum, knownLetter) key = newKey
+    where
+        newKey = Lib.replaceAtIndex colNum keyLetter key
+        keyLetter =getKeyLetter targets (targetNum, colNum, knownLetter)
+
+substituteLetters
+    :: [B.ByteString] 
+    -> [(Int, Int, Char)]
+    -> B.ByteString 
+    -> B.ByteString
+substituteLetters targets [] key = key
+substituteLetters targets (x:xs) key = substituteLetters targets xs newKey
+    where newKey = substituteLetter targets x key
+
 updatedKey
     :: [B.ByteString]
     -> [(Int, Int, Char)] 
+    -> [(Int, Int, Char)] 
     -> B.ByteString 
     -> B.ByteString
-updatedKey targets knownLetters keySoFar = key
-    where key = keySoFar `B.append` restOfKey
-          restOfKey = B.pack $ map (getKeyLetter targets) knownLetters
+updatedKey targets substitutions additions keySoFar = key
+    where
+        key = subbed `B.append` restOfKey
+
+        restOfKey = B.pack $ map (getKeyLetter targets) additions
+        subbed = substituteLetters targets substitutions keySoFar
+          
 
 crackFixedNonceTargets 
     :: [B.ByteString] 
     -> [(Int, Int, Char)] 
+    -> [(Int, Int, Char)] 
     -> (B.ByteString, [B.ByteString])
-crackFixedNonceTargets targets substitutions = 
+crackFixedNonceTargets targets substitutions additions = 
     (secondPassKey, secondPassResults)
     where 
         firstPassKey = firstPartOfKey targets
         firstPassResults = resultsForKey targets firstPassKey
 
-        secondPassKey = updatedKey targets substitutions firstPassKey 
+        secondPassKey = updatedKey targets substitutions additions firstPassKey 
         secondPassResults = resultsForKey targets secondPassKey
 
 challenge19 :: Bool
 challenge19 = 
     results !! 0 == (BC.pack "I have met them at close of day")
     where 
-        (_, results) = crackFixedNonceTargets challenge19Targets knownLetters
+        (_, results) = crackFixedNonceTargets challenge19Targets [] knownLetters
 
 main :: IO ()
 main = do
@@ -147,6 +169,6 @@ main = do
     mapM_ print (zip [0..] results)
     where 
         keyLength = B.length key
-        (key, results) = crackFixedNonceTargets challenge19Targets knownLetters
+        (key, results) = crackFixedNonceTargets challenge19Targets [] knownLetters
         
 
