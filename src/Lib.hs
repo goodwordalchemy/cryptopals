@@ -216,7 +216,8 @@ getLetterScoreFunc textLen obsCounts = (\letter freq acc ->
                                       )
 
 isControl' :: Char -> Bool
-isControl' c = isControl c && c /= '\n' || '\65533' == c
+isControl' c = c `notElem` ['\n', '\EOT'] 
+             && (ord c <= 31 || ord c >= 127)
 
 isPunctuation' :: Char -> Bool
 isPunctuation' c = isPunctuation c && c `notElem` [',','.','\'']
@@ -224,10 +225,10 @@ isPunctuation' c = isPunctuation c && c `notElem` [',','.','\'']
 chiSquaredFreqScore :: B.ByteString -> Float
 chiSquaredFreqScore text = controlCharCoef + punctCoef + chiSquared
     where
-        controlCharCoef = 1000 * (textLength / nNonControlChars)
+        controlCharCoef = 100000 * (textLength / nNonControlChars)
         nNonControlChars = fromIntegral $ B.length nonControlChars
 
-        punctCoef = (nPunct / textLength)*200
+        punctCoef = (nPunct / textLength)*100
         nPunct = fromIntegral . B.length
                $ BC.filter isPunctuation' text
 
