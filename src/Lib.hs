@@ -7,6 +7,7 @@ module Lib ( mapWithOrig
            , replaceAtIndex
            , replaceAtIndices
            , replaceBlock
+           , replaceNth
            , base64ToBytes
            , bytesToBase64
            , hexToBytes
@@ -117,6 +118,13 @@ replaceBlock n fullOrig replacement = replaced
         front = B.concat start
         back = B.concat rest
         replaced = B.concat [front, replacement, back]
+
+replaceNth :: Int -> [a] -> a -> [a]
+replaceNth n full replacement = replaced
+    where 
+        replaced = before ++ [replacement] ++ after
+        (_, after) = splitAt 1 rest
+        (before, rest) = splitAt n full
 
 -- Base64 functions
 base64ToBytes :: B.ByteString -> B.ByteString
