@@ -1,3 +1,4 @@
+import Control.Monad.State
 import Data.Bits((.&.), complement, shift, shiftR, xor)
 import Data.Word(Word8)
 import Debug.Trace
@@ -76,5 +77,12 @@ extractNumber (idx, prev) = (r, (idx'+1, cur))
         y'''' = y''' `xor` (y''' `shiftR` l)
         r = lowestWBits y''''
 
+mtInt :: State MTState Int
+mtInt = state  $ \s -> extractNumber s
+-- Testing
+
+mtInts :: State MTState [Int]
+mtInts
+--
 -- challenge21 :: Bool
 -- challenge21 = 
