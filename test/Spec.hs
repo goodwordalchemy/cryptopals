@@ -20,6 +20,7 @@ import qualified Challenge17 as C17
 import qualified Challenge18 as C18
 import qualified Challenge19 as C19
 import qualified Challenge20 as C20
+import qualified Challenge21 as C21
 
 
 challenge1Test = TestCase 
@@ -159,6 +160,12 @@ challenge20Test = TestCase
                       True
                       result
 
+challenge21Test = TestCase
+                $ assertEqual
+                      "Challenge 21: Implement the MT19937 Mersenne Twister RNG"
+                      True
+                      C21.challenge21
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -179,6 +186,7 @@ testList = TestList [ challenge1Test
                     , challenge18Test
                     , challenge19Test
                     , challenge20Test
+                    , challenge21Test
                     ]
 main :: IO ()
 main = do
