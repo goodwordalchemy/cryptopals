@@ -1,5 +1,6 @@
 import Data.Time.Clock
 import Data.Time.Clock.POSIX
+import Data.Time.LocalTime
 
 import Control.Concurrent(threadDelay)
 import Control.Monad.State(runState)
@@ -7,7 +8,10 @@ import System.Random(randomRIO)
 import MersenneTwister(mtInt, MTState, seedMt)
 
 low = 40
-high = 1000
+high = 300
+
+timeOfDayFromUtc :: UTCTime -> TimeOfDay
+timeOfDayFromUtc t = timeToTimeOfDay $ utctDayTime t
 
 randomNumberOfSeconds :: IO Int
 randomNumberOfSeconds = randomRIO (low, high)
@@ -47,15 +51,15 @@ crackMTSeedHelper start last target
 crackMTSeed :: Int -> IO (Maybe MTState)
 crackMTSeed target = do
     now <- getSecondsSinceEpoch
-    return $ crackMTSeedHelper (now - (3*high)) now target
+    return $ crackMTSeedHelper (now - (3*high)) (now+1) target
 
 main :: IO ()
 main = do
     print $ "getting random number..."
     (n, actual) <- getTimeDependentRandomNumber
     startTime <- getCurrentTime
-    print $ "starting to crack: " ++ show startTime
+    print $ "starting to crack: " ++ show (timeOfDayFromUtc startTime)
     crack <- crackMTSeed n
     endTime <- getCurrentTime
-    print $ "finished crack: " ++ show endTime
+    print $ "finished crack: " ++ show (timeOfDayFromUtc endTime)
     print $ fmap (==actual) crack
