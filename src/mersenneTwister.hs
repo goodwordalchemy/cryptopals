@@ -2,6 +2,7 @@ module MersenneTwister(
     extractNumber,
     seedMt,
     mtInt,
+    MTState,
                       ) where
 
 import Control.Monad.State
