@@ -1,3 +1,5 @@
+module Challenge23(challenge23) where
+
 import Data.Bits
 import Data.Char(intToDigit)
 import Debug.Trace
@@ -5,7 +7,7 @@ import Numeric(showIntAtBase)
 import Text.Printf
 
 
-import MersenneTwister(mtInt, MTState, seedMt)
+import MersenneTwister(getMtInts, getMtIntsState, mtInt, MTState, seedMt)
 
 showBits :: Int -> String
 showBits i = showIntAtBase 2 intToDigit i ""
@@ -71,3 +73,32 @@ untemper y'''' = y
         y'' = untemperLeft y''' t c
         y' = untemperLeft y'' s b
         y = untemperRight y' u
+
+cloneMtFromNums :: [Int] -> MTState
+cloneMtFromNums nums 
+  | length nums /= n = error "need 624 nums to clone mt state"
+  | otherwise = (n, map untemper nums)
+
+cloneMt :: MTState -> MTState
+cloneMt mt = cloneMtFromNums nums
+    where nums = getMtInts 624 mt
+
+-- Tests
+getTestOutputs :: ([Int], [Int])
+getTestOutputs = 
+    let mt = seedMt 42
+        (firstN, mt') = getMtIntsState n mt
+        clone = cloneMt mt
+        first10 = getMtInts 10 mt'
+        first10' = getMtInts 10 clone
+    in (first10, first10')
+
+challenge23 :: Bool
+challenge23 = expected == actual
+    where (expected, actual) = getTestOutputs
+
+main :: IO ()
+main = do
+    let (first10, first10') = getTestOutputs
+    print $ "orig:" ++ show first10
+    print $ "clone:" ++ show first10'

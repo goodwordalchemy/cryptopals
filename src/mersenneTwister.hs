@@ -1,8 +1,9 @@
-module MersenneTwister(
-    extractNumber,
-    seedMt,
-    mtInt,
-    MTState,
+module MersenneTwister( extractNumber
+                      , getMtInts
+                      , getMtIntsState
+                      , mtInt
+                      , MTState
+                      , seedMt
                       ) where
 
 import Control.Monad.State
@@ -87,3 +88,8 @@ extractNumber (idx, prev) = (r, (idx'+1, cur))
 mtInt :: State MTState Int
 mtInt = state  $ \s -> extractNumber s
 
+getMtIntsState :: Int -> MTState -> ([Int], MTState)
+getMtIntsState n mt = runState (sequence $ replicate n mtInt) mt
+
+getMtInts :: Int -> MTState -> [Int]
+getMtInts n mt = fst (getMtIntsState n mt) 
