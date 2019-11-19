@@ -21,6 +21,8 @@ import qualified Challenge18 as C18
 import qualified Challenge19 as C19
 import qualified Challenge20 as C20
 import qualified Challenge21 as C21
+-- testing not applicable for C22
+import qualified Challenge23 as C23
 
 
 challenge1Test = TestCase 
@@ -166,6 +168,12 @@ challenge21Test = TestCase
                       True
                       C21.challenge21
 
+challenge23Test = TestCase
+                $ assertEqual
+                      "Challenge 23: Clone an MT19937 RNG from its output"
+                      True
+                      C23.challenge23
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -187,6 +195,7 @@ testList = TestList [ challenge1Test
                     , challenge19Test
                     , challenge20Test
                     , challenge21Test
+                    , challenge23Test
                     ]
 main :: IO ()
 main = do
