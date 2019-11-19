@@ -25,6 +25,22 @@ c = 0xEFC60000
 l = 18
 
 
+-- For debugging
+temperRight :: Int -> Int -> Int
+temperRight n s = n `xor` (n `shiftR` s)
+
+temperLeft :: Int -> Int -> Int -> Int
+temperLeft n s m = n `xor` ((n `shift` s) .&. m)
+
+temper :: Int -> Int
+temper y = y''''
+    where
+        y' = y `xor` ((y `shiftR` u) .&. d)
+        y'' = y' `xor` ((y' `shift` s) .&. b)
+        y''' = y'' `xor` ((y'' `shift` t) .&. c)
+        y'''' = y''' `xor` (y''' `shiftR` l)
+
+-- For attacking
 untemperRightHelper :: Int -> Int -> Int -> Int -> Int
 untemperRightHelper nLeft acc n s
   | nLeft <= s = n `xor` (acc `shiftR` s)
@@ -33,10 +49,25 @@ untemperRightHelper nLeft acc n s
         nLeft' = nLeft - s
         acc' = n `xor` (acc `shiftR` s)
 
+
 untemperRight :: Int -> Int -> Int
 untemperRight n s = untemperRightHelper 32 n n s
-        
-temperRight :: Int -> Int -> Int
-temperRight n s = n `xor` (n `shiftR` s)
-        
 
+untemperLeftHelper :: Int -> Int -> Int -> Int -> Int -> Int
+untemperLeftHelper nLeft acc n s m
+  | nLeft <= s = n `xor` ((acc `shift` s) .&. m)
+  | otherwise = untemperLeftHelper nLeft' acc' n s m
+    where
+        nLeft' = nLeft - s
+        acc' = n `xor` ((acc `shift` s) .&. m)
+
+untemperLeft :: Int -> Int -> Int -> Int
+untemperLeft n s m = untemperLeftHelper 32 n n s m
+
+untemper :: Int -> Int
+untemper y'''' = y
+    where
+        y''' = untemperRight y'''' l
+        y'' = untemperLeft y''' t c
+        y' = untemperLeft y'' s b
+        y = untemperRight y' u
