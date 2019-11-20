@@ -362,8 +362,8 @@ ecbEncryptWithKey :: B.ByteString -> B.ByteString -> B.ByteString
 ecbEncryptWithKey key text = ecbEncryption aes text
     where aes = initAES128 key
 
-ecbEncryptWithKey :: B.ByteString -> B.ByteString -> B.ByteString
-ecbEncryptWithKey key text = ecbDecryption aes text
+ecbDecryptWithKey :: B.ByteString -> B.ByteString -> B.ByteString
+ecbDecryptWithKey key text = ecbDecryption aes text
     where aes = initAES128 key
 
 cbcEncryptionStep 

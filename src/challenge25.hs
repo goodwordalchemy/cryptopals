@@ -3,7 +3,10 @@ import qualified Data.ByteString as B
 import qualified Lib
 
 challengePlainText :: IO B.ByteString
-challengePlainText = Lib.base64ToBytes $ B.readFile "data/25.txt"
+challengePlainText = fmap Lib.base64ToBytes $ B.readFile "data/25.txt"
+
+splitQuotRem16 :: Int -> (Int, Int)
+splitQuotRem16 n = (n `div` 16, n `mod` 16)
 
 editBlocks 
     :: B.ByteString 
@@ -11,7 +14,7 @@ editBlocks
     -> [B.ByteString]
     -> [B.ByteString]
 editBlocks key blockOffset (this:rest)
-  | theseBlocks == [] = []
+  | rest == [] = this':[]
   | otherwise = this':rest'
     where 
         rest' = editBlocks key (blockOffset+1) rest
@@ -21,16 +24,17 @@ editBlocks key blockOffset (this:rest)
 prependOffset 
     :: B.ByteString 
     -> Int 
-    -> Int 
     -> B.ByteString 
     -> B.ByteString 
     -> B.ByteString
-prependOffset key blockOffset offsetInBlock firstCtBlock newtext = newtext'
+prependOffset key offset firstCtBlock newtext = newtext'
     where
         newtext' = spliceIn `B.append` newtext
         (spliceIn, _) = B.splitAt offsetInBlock decryptedFirstBlock
         decryptedFirstBlock = Lib.ecbEncryptWithKey key' firstCtBlock
         key' = Lib.ctrStepKey key blockOffset
+
+        (blockOffset, offsetInBlock) = splitQuotRem16 offset
         
 
 edit :: B.ByteString -> B.ByteString -> Int -> B.ByteString -> B.ByteString
@@ -40,20 +44,16 @@ edit ciphertext key offset newtext
     where 
         newCiphertext = B.concat $ beforeBlocks ++ editedBlocks ++ afterBlocks
 
-        editedBlocks = editBlocks 
-                            theseBlocks 
-                            key 
-                            blockOffset 
-                            newtextBlocks
+        editedBlocks = editBlocks key blockOffset newtextBlocks
         
-        newtextBlocks = chunks16 newText'
-        newtext' = prependOffset offsetInBlock (theseBlocks !! 0) newtext
+        newtextBlocks = Lib.chunks16 newtext'
+        newtext' = prependOffset key offset (theseBlocks !! 0) newtext
         
-        (theseBlocks, afterBlocks) = B.split nBlocks rest
-        (beforeBlocks, rest) = B.splitAt blockOffset blocks
+        (theseBlocks, afterBlocks) = splitAt nBlocks rest
+        (beforeBlocks, rest) = splitAt blockOffset blocks
         blocks = Lib.chunks16 ciphertext
 
         nBlocks = offsetInBlock + (B.length newtext)
-        blockOffset = offset `div` 16
-        offsetInBlock = offset `mod` 16
+        
+        (blockOffset, offsetInBlock) = splitQuotRem16 offset
 
