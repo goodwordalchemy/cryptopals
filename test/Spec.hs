@@ -23,6 +23,7 @@ import qualified Challenge20 as C20
 import qualified Challenge21 as C21
 -- testing not applicable for C22
 import qualified Challenge23 as C23
+import qualified Challenge24 as C24
 
 
 challenge1Test = TestCase 
@@ -174,6 +175,12 @@ challenge23Test = TestCase
                       True
                       C23.challenge23
 
+challenge24Test = TestCase
+                $ assertEqual
+                      "Challenge 24: Create the MT19937 stream cipher and break it"
+                      True
+                      C24.challenge24
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -196,6 +203,7 @@ testList = TestList [ challenge1Test
                     , challenge20Test
                     , challenge21Test
                     , challenge23Test
+                    , challenge24Test
                     ]
 main :: IO ()
 main = do

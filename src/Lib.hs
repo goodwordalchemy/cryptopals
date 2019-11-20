@@ -37,8 +37,10 @@ module Lib ( mapWithOrig
            , getRandomLetterStream
            , randomByteString
            , getCTRDevice
+           , getSecondsSinceEpoch
            ) where
 
+import Control.Concurrent(threadDelay)
 import Crypto.Cipher
 import Data.Bits(xor, shift, (.&.))
 import qualified Data.ByteString as B
@@ -50,6 +52,12 @@ import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import Data.Time.Clock( getCurrentTime
+                      , nominalDiffTimeToSeconds
+                      , utctDayTime
+                      , UTCTime )
+import Data.Time.Clock.POSIX(utcTimeToPOSIXSeconds)
+import Data.Time.LocalTime(timeToTimeOfDay, TimeOfDay)
 import Data.Tuple(snd)
 import Data.Word(Word8)
 import Debug.Trace
@@ -443,3 +451,18 @@ getCTRDevice key
   | B.length key /= 16 = error "AES128 keys must be 16 bytes"
   | otherwise = ctrEncryption aes
     where aes = initAES128 key
+
+-- Time utils
+timeOfDayFromUtc :: UTCTime -> TimeOfDay
+timeOfDayFromUtc t = timeToTimeOfDay $ utctDayTime t
+
+waitNSeconds :: Int -> IO ()
+waitNSeconds n = threadDelay $ n * 10^6
+
+secondsSinceEpoch :: UTCTime -> Int
+secondsSinceEpoch = floor . nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
+
+getSecondsSinceEpoch :: IO Int
+getSecondsSinceEpoch = do
+    now <- getCurrentTime
+    return $ secondsSinceEpoch now
