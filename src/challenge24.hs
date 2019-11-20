@@ -1,5 +1,6 @@
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
+import System.Random
 
 import qualified Lib
 import MersenneTwister( cloneMt
@@ -22,9 +23,34 @@ mtEncrypt seed text
         keyStream = makeKeyStream mt $ B.length text
         mt = seedMt seed
 
-mtDecrypt :: Int -> B.ByteString -> B.ByteString
-mtDecrypt = mtEncrypt
+type MTOracle = B.ByteString -> B.ByteString
 
+randomBS :: Int -> Int -> Int -> B.ByteString
+randomBS seed lowLength highLength = result
+    where result = B.pack
+                 $ take l 
+                 $ randomRs (0, 255) (mkStdGen seed+1)
+
+getOracle :: Int -> MTOracle
+getOracle seed text = mtEncrypt seed extended
+    where 
+        extended = 
+        nBytes = randomRs (10, 100)
+
+bruteForceMtSeedHelper :: MTOracle -> Int -> Int -> Int
+bruteForceMtSeedHelper oracle cur stop 
+  | cur == stop = error "could not find seed"
+  | output = knownText = cur
+  | otherwise = bruteForceMtSeedHelper cipher (cur+1) stop
+    where
+        output = 
+        keyStream = 
+        
+        knownText = BC.pack "12345678901234"
+
+
+bruteForceMtSeed :: MTCipher -> Int
+bruteForceMtSeed cipher = seed
 
 -- Tests
 testStreamCipher :: IO ()
