@@ -31,6 +31,8 @@ module Lib ( mapWithOrig
            , initAES128
            , ecbDecryption
            , ecbEncryption
+           , ecbEncryptWithKey
+           , ecbDecryptWithKey
            , cbcDecryption
            , cbcEncryption
            , getRandomAESKey
@@ -38,6 +40,7 @@ module Lib ( mapWithOrig
            , randomByteString
            , getCTRDevice
            , getSecondsSinceEpoch
+           , ctrStepKey
            ) where
 
 import Control.Concurrent(threadDelay)
@@ -355,6 +358,14 @@ ecbEncryption :: AES128 -> B.ByteString -> B.ByteString
 ecbEncryption ctx plainText = ecbEncrypt ctx paddedPlainText
     where paddedPlainText = padToMultiple plainText 16
 
+ecbEncryptWithKey :: B.ByteString -> B.ByteString -> B.ByteString
+ecbEncryptWithKey key text = ecbEncryption aes text
+    where aes = initAES128 key
+
+ecbEncryptWithKey :: B.ByteString -> B.ByteString -> B.ByteString
+ecbEncryptWithKey key text = ecbDecryption aes text
+    where aes = initAES128 key
+
 cbcEncryptionStep 
     :: AES128 
     -> B.ByteString 
@@ -435,8 +446,10 @@ ctrStep ctx nonceBytes count text acc
         (thisText, nextText) = B.splitAt 16 text
 
         encrypted = ecbEncryption ctx ivCounterPair
-        ivCounterPair = nonceBytes `B.append` countBytes
-        countBytes = littleEndian64 count
+        ivCounterPair = ctrStepKey nonceBytes count
+
+ctrStepKey :: B.ByteString -> Int -> B.ByteString
+ctrStepKey nonce count = B.append nonce $ littleEndian64 count
 
 ctrEncryption :: AES128 -> Int -> B.ByteString -> B.ByteString
 ctrEncryption ctx nonce text = ctrStep 
