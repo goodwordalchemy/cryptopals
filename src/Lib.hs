@@ -2,6 +2,7 @@ module Lib ( mapWithOrig
            , isSubstring
            , splitIntoChunks
            , chunks16
+           , littleEndian32
            , nthChunk16
            , findRepetitionIndex
            , replaceAtIndex
@@ -393,13 +394,21 @@ getRandomAESKey gen = (key, gen')
         (key, _) = randomByteString letterStream 16
         (letterStream, gen') = getRandomLetterStream gen
 
-littleEndian :: Int -> B.ByteString
-littleEndian num = B.pack 
-                 $ map (fromIntegral . last2BytesShifted)
-                 $ map (*8) [0..7]
+littleEndian :: Int -> Int -> B.ByteString
+littleEndian nBits num = 
+    B.pack 
+    $ map (fromIntegral . last2BytesShifted)
+    $ map (*8) [0..(nBytes-1)]
+
     where
+        nBytes = nBits `div` 8
         last2BytesShifted s = (num `shift` (-s)) .&. 0xFF
 
+littleEndian64 :: Int -> B.ByteString
+littleEndian64 = littleEndian 64
+
+littleEndian32 :: Int -> B.ByteString
+littleEndian32 = littleEndian 32
 
 ctrStep 
     :: AES128
@@ -419,12 +428,12 @@ ctrStep ctx nonceBytes count text acc
 
         encrypted = ecbEncryption ctx ivCounterPair
         ivCounterPair = nonceBytes `B.append` countBytes
-        countBytes = littleEndian count
+        countBytes = littleEndian64 count
 
 ctrEncryption :: AES128 -> Int -> B.ByteString -> B.ByteString
 ctrEncryption ctx nonce text = ctrStep 
                                     ctx nonceBytes 0 text B.empty
-    where nonceBytes = littleEndian nonce
+    where nonceBytes = littleEndian64 nonce
 
 ctrDecryption :: AES128 -> Int -> B.ByteString -> B.ByteString
 ctrDecryption = ctrEncryption
