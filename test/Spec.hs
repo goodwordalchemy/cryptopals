@@ -25,6 +25,7 @@ import qualified Challenge21 as C21
 import qualified Challenge23 as C23
 import qualified Challenge24 as C24
 import qualified Challenge25 as C25
+import qualified Challenge26 as C26
 
 
 challenge1Test = TestCase 
@@ -188,6 +189,12 @@ challenge25Test = TestCase
                       True
                       C25.challenge25
 
+challenge26Test = TestCase
+                $ assertEqual
+                      "Challenge 26: CTR bitflipping"
+                      True
+                      C26.challenge26
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -212,6 +219,7 @@ testList = TestList [ challenge1Test
                     , challenge23Test
                     , challenge24Test
                     , challenge25Test
+                    , challenge26Test
                     ]
 main :: IO ()
 main = do
