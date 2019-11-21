@@ -3,6 +3,7 @@ module Lib ( mapWithOrig
            , splitIntoChunks
            , chunks16
            , littleEndian32
+           , littleEndian64
            , nthChunk16
            , findRepetitionIndex
            , replaceAtIndex
@@ -39,6 +40,7 @@ module Lib ( mapWithOrig
            , getRandomLetterStream
            , randomByteString
            , getCTRDevice
+           , ctrStep
            , getSecondsSinceEpoch
            , ctrStepKey
            ) where
@@ -464,6 +466,7 @@ getCTRDevice key
   | B.length key /= 16 = error "AES128 keys must be 16 bytes"
   | otherwise = ctrEncryption aes
     where aes = initAES128 key
+
 
 -- Time utils
 timeOfDayFromUtc :: UTCTime -> TimeOfDay
