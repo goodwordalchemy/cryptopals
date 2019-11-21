@@ -4,9 +4,6 @@ import Debug.Trace
 
 import qualified Lib
 
-challengePlainText :: IO B.ByteString
-challengePlainText = fmap Lib.base64ToBytes $ B.readFile "data/25.txt"
-
 ctrStep' :: Int -> B.ByteString -> Int -> B.ByteString -> B.ByteString
 ctrStep' nonce key count text = Lib.ctrStep ctx nonceBytes count text B.empty
     where
@@ -71,8 +68,32 @@ edit ciphertext keyNonce offset newtext
         
         (blockOffset, offsetInBlock) = splitQuotRem16 offset
 
+-- Attack
+type EditFunc = Int -> B.ByteString -> B.ByteString
 
--- tests
+clipChunk :: Int -> B.ByteString -> B.ByteString
+clipChunk offset text = chunk
+    where
+        (chunk, _) = B.splitAt 16 step1
+        (_, step1) = B.splitAt offset text
+
+attackEditHelper :: EditFunc -> B.ByteString -> Int -> B.ByteString
+attackEditHelper editFunc ciphertext offset
+  | offset >= B.length ciphertext = B.empty
+  | otherwise = decrypted `B.append` decryptedRest
+    where
+        decryptedRest = attackEditHelper editFunc ciphertext (offset + 16)
+
+        decrypted = unknown `Lib.fixedXOR` kCipher `Lib.fixedXOR` kPlain
+        unknown = clipChunk offset ciphertext
+        kCipher = clipChunk offset $ editFunc offset kPlain
+
+        kPlain = BC.replicate 16 'A'
+
+attackEdit :: EditFunc -> B.ByteString -> B.ByteString
+attackEdit editFunc ciphertext = attackEditHelper editFunc ciphertext 0
+
+-- Tests
 testEdit :: IO ()
 testEdit = do
     let pt = (BC.pack "my sexy plaintext, curves & all.")
@@ -83,6 +104,24 @@ testEdit = do
         nt = Lib.getCTRDevice key nonce edited
     print nt
 
+testAttackEdit :: IO ()
+testAttackEdit = do
+    let pt = (BC.pack "my sexy plaintext, curves & all.")
+        key = BC.replicate 16 'A'
+        nonce = 42
+        ct = Lib.getCTRDevice key nonce pt
+        editFunc = edit ct (key, nonce)
+        
+        attacked = attackEdit editFunc ct
+    print attacked
+
+
+challengePlainText :: IO B.ByteString
+challengePlainText = fmap Lib.base64ToBytes $ B.readFile "data/25.txt"
+
+-- testDecryptChallengeFile
+
 main :: IO ()
 main = do
-    testEdit
+    -- testEdit
+    testAttackEdit
