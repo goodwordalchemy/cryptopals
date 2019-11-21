@@ -34,7 +34,7 @@ prependOffset
     -> B.ByteString 
     -> B.ByteString 
     -> B.ByteString
-prependOffset (key, nonce) offset firstCtBlock newtext = (trace $ "prepend offset result =>" ++ show newtext')$ newtext'
+prependOffset (key, nonce) offset firstCtBlock newtext = newtext'
     where
         newtext' = spliceBefore `B.append` newtext `B.append` spliceAfter
         
@@ -54,8 +54,7 @@ edit
     -> B.ByteString
 edit ciphertext keyNonce offset newtext 
   | offset > B.length ciphertext = error "offset cannot be greater than length of ciphertext"
-  | otherwise = (trace $ "afterblocks ==>" ++ show afterBlocks ++ ", nBlocks:" ++ show nBlocks ++ ", theseBlocks:" ++ show theseBlocks)
-              $ newCiphertext
+  | otherwise = newCiphertext
     where 
         newCiphertext = B.concat $ beforeBlocks ++ editedBlocks ++ afterBlocks
 
