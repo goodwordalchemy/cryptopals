@@ -1,3 +1,4 @@
+module Challenge25(challenge25) where
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Debug.Trace
@@ -104,24 +105,44 @@ testEdit = do
         nt = Lib.getCTRDevice key nonce edited
     print nt
 
-testAttackEdit :: IO ()
-testAttackEdit = do
-    let pt = (BC.pack "my sexy plaintext, curves & all.")
-        key = BC.replicate 16 'A'
+encryptAndDecrypt :: B.ByteString -> B.ByteString
+encryptAndDecrypt pt = 
+    let key = BC.replicate 16 'A'
         nonce = 42
         ct = Lib.getCTRDevice key nonce pt
         editFunc = edit ct (key, nonce)
         
-        attacked = attackEdit editFunc ct
+     in attackEdit editFunc ct
+
+testAttackEdit :: IO ()
+testAttackEdit = do
+    let pt = (BC.pack "my sexy plaintext, curves & all.")
+        attacked = encryptAndDecrypt pt
     print attacked
 
+poem = "\"No Man Is an Island\" by John Donne\
+\No man is an island, entire of itself;\
+\every man is a piece of the continent,\
+\a part of the main.\
+\If a clod be washed away by the sea,\
+\Europe is the less,\
+\as well as if a promontory were,\
+\as well as if a manor of thy friend's\
+\or of thine own were.\
+\Any man's death diminishes me,\
+\because I am involved in mankind;\
+\and therefore never send to know\
+\for whom the bell tolls;\
+\it tolls for thee."
 
-challengePlainText :: IO B.ByteString
-challengePlainText = fmap Lib.base64ToBytes $ B.readFile "data/25.txt"
+challenge25 :: Bool
+challenge25 = decrypted == raw
+    where 
+        decrypted = encryptAndDecrypt raw
+        raw = BC.pack poem
 
--- testDecryptChallengeFile
-
+--
 main :: IO ()
 main = do
-    -- testEdit
+    testEdit
     testAttackEdit

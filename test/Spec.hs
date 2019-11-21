@@ -24,6 +24,7 @@ import qualified Challenge21 as C21
 -- testing not applicable for C22
 import qualified Challenge23 as C23
 import qualified Challenge24 as C24
+import qualified Challenge25 as C25
 
 
 challenge1Test = TestCase 
@@ -181,6 +182,12 @@ challenge24Test = TestCase
                       True
                       C24.challenge24
 
+challenge25Test = TestCase
+                $ assertEqual
+                      "Challenge 25: Break \"random access read/write\" AES CTR"
+                      True
+                      C25.challenge25
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -204,6 +211,7 @@ testList = TestList [ challenge1Test
                     , challenge21Test
                     , challenge23Test
                     , challenge24Test
+                    , challenge25Test
                     ]
 main :: IO ()
 main = do
