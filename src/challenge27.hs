@@ -1,4 +1,4 @@
--- module Challenge27(challenge27) where
+module Challenge27(challenge27) where
 
 import Crypto.Cipher(AES128)
 import Data.Bits(xor)
@@ -18,14 +18,14 @@ nthBlock16 n text = (Lib.chunks16 text) !! n
 data CipherDirection = Encryption | Decryption
 type Device = CipherDirection -> B.ByteString -> B.ByteString
 
+-- key == iv
 getCBCDevice :: B.ByteString -> Device
 getCBCDevice key =
-    let iv = key
-        aes = Lib.initAES128 key
+    let aes = Lib.initAES128 key
         func = (\direction input -> 
             case direction of 
-              Encryption -> Lib.cbcEncryption aes iv input
-              Decryption -> Lib.cbcDecryption aes iv input)
+              Encryption -> Lib.cbcEncryption aes key input
+              Decryption -> Lib.cbcDecryption aes key input)
     in func
 
 type Oracle = B.ByteString -> Either B.ByteString Bool
@@ -52,10 +52,10 @@ recoverKey encryption oracle = key
 
         Left plaintext' = oracle ciphertext'
         
-        ciphertext' = B.concat [c0, nulls, c2]
+        ciphertext' = B.concat [c0, nulls, c0]
         nulls = B.replicate 16 0
+        c0 = (Lib.chunks16 ciphertext) !! 0
 
-        [c0, _, c2] = Lib.chunks16 ciphertext
         ciphertext = encryption plaintext
         plaintext = BC.replicate (3*16) 'A'
 
@@ -78,6 +78,9 @@ testRecoverKey =
         encryption = getEncryptionFunc device
         recoveredKey = recoverKey encryption oracle
     in key == recoveredKey
+
+challenge27 :: Bool
+challenge27 = testRecoverKey
 
 main :: IO ()
 main = do
