@@ -43,16 +43,19 @@ module Lib ( mapWithOrig
            , ctrStep
            , getSecondsSinceEpoch
            , ctrStepKey
+           , sha1KeyedMAC
            ) where
 
 import Control.Concurrent(threadDelay)
 import Crypto.Cipher
 import Data.Bits(xor, shift, (.&.))
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
 import Data.Char(isLetter, toLower, isControl, chr, isPunctuation, ord)
+import Data.Digest.Pure.SHA(bytestringDigest, sha1)
 import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -482,3 +485,13 @@ getSecondsSinceEpoch :: IO Int
 getSecondsSinceEpoch = do
     now <- getCurrentTime
     return $ secondsSinceEpoch now
+
+-- HMAC
+lazyB :: B.ByteString -> BL.ByteString
+lazyB = BL.fromStrict 
+
+strictBL :: BL.ByteString -> B.ByteString
+strictBL = B.concat . BL.toChunks
+
+sha1KeyedMAC :: BL.ByteString -> BL.ByteString -> BL.ByteString
+sha1KeyedMAC key text = bytestringDigest $ sha1 (key `BL.append` text)

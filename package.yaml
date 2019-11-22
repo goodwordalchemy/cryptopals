@@ -33,6 +33,7 @@ dependencies:
 - HUnit
 - mtl >= 2.2.2
 - time >= 1.9.3
+- SHA >= 1.6.4.4
 
 library:
   source-dirs: src
