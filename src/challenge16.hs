@@ -22,7 +22,7 @@ getCBCEncryptionDevice :: IO Device
 getCBCEncryptionDevice = do
     gen <- newStdGen
     let (key, gen') = Lib.getRandomAESKey gen
-        (iv, _) = Lib.getRandomAESKey gen
+        (iv, _) = Lib.getRandomAESKey gen'
         aes = Lib.initAES128 key
         func = (\direction input -> 
             case direction of 
