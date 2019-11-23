@@ -4,6 +4,7 @@ module Lib ( mapWithOrig
            , chunks16
            , littleEndian32
            , littleEndian64
+           , bigEndian64
            , nthChunk16
            , findRepetitionIndex
            , replaceAtIndex
@@ -44,6 +45,8 @@ module Lib ( mapWithOrig
            , getSecondsSinceEpoch
            , ctrStepKey
            , sha1KeyedMAC
+           , lazyB
+           , strictBL
            ) where
 
 import Control.Concurrent(threadDelay)
@@ -418,21 +421,35 @@ getRandomAESKey gen = (key, gen')
         (key, _) = randomByteString letterStream 16
         (letterStream, gen') = getRandomLetterStream gen
 
-littleEndian :: Int -> Int -> B.ByteString
-littleEndian nBits num = 
+data Endianness = Big | Little
+
+xEndian :: Endianness -> Int -> Int -> B.ByteString
+xEndian endianness nBits num = 
     B.pack 
     $ map (fromIntegral . last2BytesShifted)
-    $ map (*8) [0..(nBytes-1)]
+    $ map (*8) byteIdxs
 
     where
-        nBytes = nBits `div` 8
         last2BytesShifted s = (num `shift` (-s)) .&. 0xFF
+        byteIdxs = case endianness of
+                     Big -> reverse [0..(nBytes-1)]
+                     Little -> [0..(nBytes-1)]
+        nBytes = nBits `div` 8
+
+littleEndian :: Int -> Int -> B.ByteString
+littleEndian = xEndian Little
 
 littleEndian64 :: Int -> B.ByteString
 littleEndian64 = littleEndian 64
 
 littleEndian32 :: Int -> B.ByteString
 littleEndian32 = littleEndian 32
+
+bigEndian :: Int -> Int -> B.ByteString
+bigEndian = xEndian Big
+
+bigEndian64 :: Int -> B.ByteString
+bigEndian64 = bigEndian 64
 
 ctrStep 
     :: AES128
