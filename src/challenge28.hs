@@ -1,4 +1,6 @@
 module Challenge28(challenge28) where
+import Data.ByteString as B
+import Data.ByteString.Char8 as BC
 import Data.ByteString.Lazy as BL
 import Data.ByteString.Lazy.Char8 as BLC
 
@@ -11,11 +13,11 @@ verifyCantTamperMessage = (orig /= tamperedKey) && (orig /= tamperedMessage)
         tamperedMessage = Lib.sha1KeyedMAC key message'
         orig = Lib.sha1KeyedMAC key message
 
-        key' = BLC.pack "stacky icky"
-        key = BLC.pack "sticky icky"
+        key' = BC.pack "stacky icky"
+        key = BC.pack "sticky icky"
 
-        message' = BLC.pack "uery secret message.  somewhat long"
-        message = BLC.pack "very secret message.  somewhat long"
+        message' = BC.pack "uery secret message.  somewhat long"
+        message = BC.pack "very secret message.  somewhat long"
 
 verifyCantProduceNewMacWithoutKey :: Bool
 verifyCantProduceNewMacWithoutKey = True

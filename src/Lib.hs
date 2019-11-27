@@ -4,7 +4,9 @@ module Lib ( mapWithOrig
            , chunks16
            , littleEndian32
            , littleEndian64
+           , bigEndian32
            , bigEndian64
+           , intFromBigEndian32
            , nthChunk16
            , findRepetitionIndex
            , replaceAtIndex
@@ -451,6 +453,19 @@ bigEndian = xEndian Big
 bigEndian64 :: Int -> B.ByteString
 bigEndian64 = bigEndian 64
 
+bigEndian32 :: Int -> B.ByteString
+bigEndian32 = bigEndian 32
+
+intFromBigEndian32 :: B.ByteString -> Int
+intFromBigEndian32 text =
+    foldl foldFunc 0 [0..3]
+    where 
+        foldFunc acc idx = 
+            let letterVal = (w8AsInt (text `B.index` idx))
+                shiftVal = 8*(3-idx)
+            in acc + (letterVal `shift` shiftVal)
+        w8AsInt w = (fromIntegral w)::Int
+
 ctrStep 
     :: AES128
     -> B.ByteString 
@@ -510,5 +525,10 @@ lazyB = BL.fromStrict
 strictBL :: BL.ByteString -> B.ByteString
 strictBL = B.concat . BL.toChunks
 
-sha1KeyedMAC :: BL.ByteString -> BL.ByteString -> BL.ByteString
-sha1KeyedMAC key text = bytestringDigest $ sha1 (key `BL.append` text)
+sha1KeyedMAC :: B.ByteString -> B.ByteString -> B.ByteString
+sha1KeyedMAC key text = strictBL 
+                      $ bytestringDigest 
+                      $ sha1 (key' `BL.append` text')
+    where
+        key' = lazyB key
+        text' = lazyB text
