@@ -998,12 +998,13 @@ sha1FromState
     :: (Word32, Word32, Word32, Word32, Word32) 
     -> ByteString 
     -> Digest SHA1State
-sha1FromState (a, b, c, d, e) bs_in = Digest bs_out
- where
-  bs_pad = padSHA1 bs_in
-  istate = SHA1S a b c d e
-  fstate = runSHA istate processSHA1Block bs_pad
-  bs_out = runPut $! synthesizeSHA1 fstate
+sha1FromState (a, b, c, d, e) bs_pad 
+    | BS.length bs_pad `mod` 64 /= 0 = error "input to sha1FromState must be padded to mutliple of 128"
+    | otherwise = Digest bs_out
+     where
+      istate = SHA1S a b c d e
+      fstate = runSHA istate processSHA1Block bs_pad
+      bs_out = runPut $! synthesizeSHA1 fstate
 
 -- |Similar to `sha1` but use an incremental interface. When the decoder has
 -- been completely fed, `completeSha1Incremental` must be used so it can

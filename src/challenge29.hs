@@ -47,9 +47,9 @@ sha1StateChunks text = (a, b, c, d, e)
 
 getLengthExtensionHash :: B.ByteString -> B.ByteString -> B.ByteString
 getLengthExtensionHash digest added = 
-    Lib.strictBL $ bytestringDigest hashed'
+    Lib.strictBL $ (trace $ "attack hash:" ++ show hashed')$bytestringDigest hashed'
     where
-        hashed' = sha1FromState stateChunks (Lib.lazyB added)
+        hashed' = (trace $ "state chunks:"++ show stateChunks ++", added: " ++ show added)$ sha1FromState stateChunks (Lib.lazyB added)
         stateChunks = sha1StateChunks digest
 
 getForgedMessage 
@@ -107,7 +107,8 @@ testLengthExtension = do
         added = BC.pack ";admin=true"
         
         attackMsg = getForgedMessage 11 orig added
-        attackHash = getLengthExtensionHash hashed added
+        added' = snd $ B.splitAt (128) $ sha1Pad $ (BC.replicate 11 'A') `B.append` attackMsg
+        attackHash = getLengthExtensionHash hashed added'
 
     print $ "orig hash => " ++ (show $ Lib.bytesToHex hashed)
     print $ "attack msg => " ++ show attackMsg
