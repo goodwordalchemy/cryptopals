@@ -28,6 +28,7 @@ import qualified Challenge25 as C25
 import qualified Challenge26 as C26
 import qualified Challenge27 as C27
 import qualified Challenge28 as C28
+import qualified Challenge29 as C29
 
 
 challenge1Test = TestCase 
@@ -209,6 +210,12 @@ challenge28Test = TestCase
                       True
                       C28.challenge28
 
+challenge29Test = TestCase
+                $ assertEqual
+                      "Challenge 29: Break a SHA-1 keyed MAC using length extension"
+                      True
+                      C29.challenge29
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -236,6 +243,7 @@ testList = TestList [ challenge1Test
                     , challenge26Test
                     , challenge27Test
                     , challenge28Test
+                    , challenge29Test
                     ]
 main :: IO ()
 main = do

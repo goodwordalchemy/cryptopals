@@ -1,3 +1,4 @@
+module Challenge29(challenge29) where
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as BCL
@@ -47,9 +48,9 @@ sha1StateChunks text = (a, b, c, d, e)
 
 getLengthExtensionHash :: B.ByteString -> B.ByteString -> B.ByteString
 getLengthExtensionHash digest added = 
-    Lib.strictBL $ (trace $ "attack hash:" ++ show hashed')$bytestringDigest hashed'
+    Lib.strictBL $ bytestringDigest hashed'
     where
-        hashed' = (trace $ "state chunks:"++ show stateChunks ++", added: " ++ show added)$ sha1FromState stateChunks (Lib.lazyB added)
+        hashed' = sha1FromState stateChunks (Lib.lazyB added)
         stateChunks = sha1StateChunks digest
 
 getForgedMessage 
@@ -115,19 +116,16 @@ testLengthExtension = do
     print $ "attack hash => " ++ (show $ Lib.bytesToHex attackHash)
     print $ "hash of forged msg =>" ++ (show $ Lib.bytesToHex (sha1Device attackMsg))
 
-testLengthExtension2 :: IO ()
-testLengthExtension2 = do
-    let orig = BC.empty
+challenge29 :: Bool
+challenge29 = 
+    let orig = BC.pack "comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon"
         hashed = sha1Device orig
-        added = BC.empty
+        added = BC.pack ";admin=true"
         
         attackMsg = getForgedMessage 11 orig added
-        attackHash = getLengthExtensionHash hashed added
-
-    print $ "orig hash => " ++ (show $ Lib.bytesToHex hashed)
-    print $ "attack msg => " ++ show attackMsg
-    print $ "attack hash => " ++ (show $ Lib.bytesToHex attackHash)
-    print $ "hash of forged msg =>" ++ (show $ Lib.bytesToHex (sha1Device attackMsg))
+        added' = snd $ B.splitAt (128) $ sha1Pad $ (BC.replicate 11 'A') `B.append` attackMsg
+        attackHash = getLengthExtensionHash hashed added'
+    in attackHash == (sha1Device attackMsg)
 
 main :: IO ()
 main = do
