@@ -30,6 +30,7 @@ import qualified Challenge27 as C27
 import qualified Challenge28 as C28
 import qualified Challenge29 as C29
 
+import MD4(md4Tests)
 
 challenge1Test = TestCase 
                $ assertEqual 
@@ -244,6 +245,7 @@ testList = TestList [ challenge1Test
                     , challenge27Test
                     , challenge28Test
                     , challenge29Test
+                    , md4Tests
                     ]
 main :: IO ()
 main = do
