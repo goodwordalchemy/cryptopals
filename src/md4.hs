@@ -1,5 +1,7 @@
 -- copied largely from https://github.com/emillon/cryptopals/blob/bc7b3930722af532c83e44ae2a5271d2d88a7e6f/Digest.hs
 module MD4 ( md4
+           , md4FromState
+           , md4Prepare
            , md4Tests
            , md4PrefixMac
            , checkMd4PrefixMac
@@ -86,6 +88,14 @@ md4Tests =
 md4 :: B.ByteString -> B.ByteString
 md4 bs =
     md4digest $ foldl' md4update md4initState $ Lib.splitIntoChunks (16*4) $ md4Prepare bs
+
+md4FromState 
+    :: (Word32, Word32, Word32, Word32) -> B.ByteString -> B.ByteString
+md4FromState (a,b,c,d) unpadded_bs =
+    md4digest $ foldl' md4update md4interState $ Lib.splitIntoChunks (16*4) $ unpadded_bs
+    where
+        md4interState = MD4S a b c d
+
 
 md4Prepare :: B.ByteString -> B.ByteString
 md4Prepare bs =

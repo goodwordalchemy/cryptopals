@@ -29,6 +29,7 @@ import qualified Challenge26 as C26
 import qualified Challenge27 as C27
 import qualified Challenge28 as C28
 import qualified Challenge29 as C29
+import qualified Challenge30 as C30
 
 import MD4(md4Tests)
 
@@ -217,6 +218,12 @@ challenge29Test = TestCase
                       True
                       C29.challenge29
 
+challenge30Test = TestCase
+                $ assertEqual
+                      "Challenge 30: Break an MD4 keyed MAC using length extension"
+                      True
+                      C30.challenge30
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -246,6 +253,7 @@ testList = TestList [ challenge1Test
                     , challenge28Test
                     , challenge29Test
                     , md4Tests
+                    , challenge30Test
                     ]
 main :: IO ()
 main = do

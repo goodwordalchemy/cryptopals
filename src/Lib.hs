@@ -7,6 +7,7 @@ module Lib ( mapWithOrig
            , bigEndian32
            , bigEndian64
            , intFromBigEndian32
+           , intFromLittleEndian32
            , nthChunk16
            , findRepetitionIndex
            , replaceAtIndex
@@ -463,6 +464,16 @@ intFromBigEndian32 text =
         foldFunc acc idx = 
             let letterVal = (w8AsInt (text `B.index` idx))
                 shiftVal = 8*(3-idx)
+            in acc + (letterVal `shift` shiftVal)
+        w8AsInt w = (fromIntegral w)::Int
+
+intFromLittleEndian32 :: B.ByteString -> Int
+intFromLittleEndian32 text =
+    foldl foldFunc 0 [0..3]
+    where 
+        foldFunc acc idx = 
+            let letterVal = (w8AsInt (text `B.index` idx))
+                shiftVal = 8*idx
             in acc + (letterVal `shift` shiftVal)
         w8AsInt w = (fromIntegral w)::Int
 
