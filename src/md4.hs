@@ -1,3 +1,4 @@
+-- copied largely from https://github.com/emillon/cryptopals/blob/bc7b3930722af532c83e44ae2a5271d2d88a7e6f/Digest.hs
 module MD4 ( md4
            , md4Tests
            , md4PrefixMac
