@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 
 module HmacServer() where
-import Network.HTTP.Types.Status(status500)
+import Network.HTTP.Types.Status(status400, status500)
 import Yesod
 
 data HMacForFile = HMacForFile
@@ -15,14 +15,21 @@ mkYesod "HMacForFile" [parseRoutes|
 
 instance Yesod HMacForFile
 
+badRequest :: Handler Html
+badRequest = do 
+    html <- defaultLayout [whamlet|Bad request|] 
+    sendResponseStatus status400 html
+
 getHomeR :: Handler Html
 getHomeR = do
-    qMaybe <- lookupGetParam "Q"
-    case qMaybe of
-      Just q -> defaultLayout [whamlet|Hello World! #{q}|] 
-      Nothing -> do 
-          html <- defaultLayout [whamlet|Yo, where's the Q?|] 
-          sendResponseStatus status500 html
+    fileMaybe <- lookupGetParam "file"
+    case fileMaybe of
+        Nothing -> badRequest
+        Just file -> do
+           signatureMaybe <- lookupGetParam "signature"
+           case signatureMaybe of
+               Nothing -> badRequest
+               Just signature -> defaultLayout [whamlet|file: #{file}, signature: #{signature}|] 
 
 main :: IO ()
 main = warp 3000 HMacForFile
