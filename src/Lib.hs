@@ -543,3 +543,8 @@ sha1KeyedMAC key text = strictBL
     where
         key' = lazyB key
         text' = lazyB text
+
+type HashFunc = B.ByteString -> B.ByteString -> B.ByteString
+
+hmac :: Hashfunc -> B.ByteString -> B.ByteString
+hmac hashfunc key 

@@ -20,6 +20,16 @@ badRequest = do
     html <- defaultLayout [whamlet|Bad request|] 
     sendResponseStatus status400 html
 
+hmacKey :: B.ByteString
+hmacKey = "sticky icky"
+
+hmac :: B.ByteString -> B.ByteString -> B.ByteString
+
+validateSignature :: B.ByteString -> B.ByteString -> Bool
+
+validationResponse :: B.ByteString -> B.ByteString -> HandlerHtml
+validationResponse file sig = 
+
 getHomeR :: Handler Html
 getHomeR = do
     fileMaybe <- lookupGetParam "file"
