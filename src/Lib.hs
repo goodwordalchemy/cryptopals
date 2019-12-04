@@ -544,7 +544,22 @@ sha1KeyedMAC key text = strictBL
         key' = lazyB key
         text' = lazyB text
 
-type HashFunc = B.ByteString -> B.ByteString -> B.ByteString
+type HashFunc = B.ByteString -> B.ByteString
 
-hmac :: Hashfunc -> B.ByteString -> B.ByteString
-hmac hashfunc key 
+hmac :: HashFunc -> Int -> B.ByteString -> B.ByteString -> B.ByteString
+hmac hashfunc blockSize key message =
+    hashfunc (o_key_pad `B.append` (hashfunc (i_key_pad `B.append` message)))
+    where
+        key' = if B.length key > blockSize 
+                  then hashfunc key
+                  else if B.length key < blockSize
+                    then key `B.append` (B.replicate (blockSize - B.length key) 0)
+                    else key
+        o_key_pad = (trace $ "key:" ++ show key')$Lib.xorWithLetter key' (chr 0x5c)
+        i_key_pad = Lib.xorWithLetter key' (chr 0x36)
+
+strictSha1 :: B.ByteString -> B.ByteString
+strictSha1 = strictBL . bytestringDigest . sha1 . lazyB 
+
+hmacSha1 :: B.ByteString -> B.ByteString -> B.ByteString
+hmacSha1 = hmac strictSha1 64
