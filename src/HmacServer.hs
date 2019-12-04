@@ -37,7 +37,7 @@ hmacKey :: B.ByteString
 hmacKey = "key"
 
 delayTime :: Int
-delayTime = 50 * 1000
+delayTime = 50
 
 insecureCompare :: B.ByteString -> B.ByteString -> IO Bool
 insecureCompare as bs

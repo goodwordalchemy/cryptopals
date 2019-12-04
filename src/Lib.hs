@@ -46,6 +46,7 @@ module Lib ( mapWithOrig
            , getCTRDevice
            , ctrStep
            , getSecondsSinceEpoch
+           , getPicoSinceEpoch
            , ctrStepKey
            , sha1KeyedMAC
            , lazyB
@@ -63,6 +64,7 @@ import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Base64 as B64
 import Data.Char(isLetter, toLower, isControl, chr, isPunctuation, ord)
 import Data.Digest.Pure.SHA(bytestringDigest, sha1)
+import Data.Fixed(Pico)
 import Data.List(groupBy, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -522,13 +524,21 @@ timeOfDayFromUtc t = timeToTimeOfDay $ utctDayTime t
 waitNSeconds :: Int -> IO ()
 waitNSeconds n = threadDelay $ n * 10^6
 
+picoSinceEpoch :: UTCTime -> Pico
+picoSinceEpoch = nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
+
 secondsSinceEpoch :: UTCTime -> Int
-secondsSinceEpoch = floor . nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
+secondsSinceEpoch = floor . picoSinceEpoch
 
 getSecondsSinceEpoch :: IO Int
 getSecondsSinceEpoch = do
     now <- getCurrentTime
     return $ secondsSinceEpoch now
+
+getPicoSinceEpoch :: IO Pico
+getPicoSinceEpoch = do
+    now <- getCurrentTime
+    return $ picoSinceEpoch now
 
 -- HMAC
 lazyB :: B.ByteString -> BL.ByteString
