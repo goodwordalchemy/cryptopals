@@ -46,7 +46,7 @@ insecureCompare as bs
   | B.head as /= B.head bs = return False
   | otherwise = do
       threadDelay delayTime
-      return $ insecureCompare (B.tail as) (B.tail bs)
+      insecureCompare (B.tail as) (B.tail bs)
 
 validateSignature :: B.ByteString -> B.ByteString -> IO Bool
 validateSignature file sig = compareResult
@@ -54,12 +54,12 @@ validateSignature file sig = compareResult
         compareResult = insecureCompare sigFromFile sig
         sigFromFile = Lib.bytesToHex $ Lib.hmacSha1 hmacKey file
 
-validationResponse :: Text -> Text -> Handler (IO Html)
+validationResponse :: Text -> Text -> Handler (Html)
 validationResponse file sig = 
     let file' = encodeUtf8 file
         sig' = encodeUtf8 sig in
     do 
-        validationResult <- validateSignature file' sig' 
+        validationResult <- liftIO $ validateSignature file' sig' 
         case validationResult of
             True -> defaultLayout [whamlet|congrats!|]
             False -> validationFailure
