@@ -4,6 +4,8 @@
 {-# LANGUAGE TypeFamilies          #-}
 
 module HmacServer() where
+
+import Control.Concurrent(threadDelay)
 import qualified Data.ByteString as B
 import Data.Text.Encoding(encodeUtf8)
 import Data.Text(Text)
@@ -33,17 +35,34 @@ validationFailure = do
 hmacKey :: B.ByteString
 hmacKey = "key"
 
-validateSignature :: B.ByteString -> B.ByteString -> Bool
-validateSignature file sig = sigFromFile == sig
-    where sigFromFile = Lib.bytesToHex $ Lib.hmacSha1 hmacKey file
+delayTime :: Int
+delayTime = 50 * 1000
 
-validationResponse :: Text -> Text -> Handler Html
+insecureCompare :: B.ByteString -> B.ByteString -> IO Bool
+insecureCompare as bs
+  | B.length as == 0 && B.length bs == 0 = return True
+  | B.length as == 0 = return False
+  | B.length bs == 0 = return False
+  | B.head as /= B.head bs = return False
+  | otherwise = do
+      threadDelay delayTime
+      return $ insecureCompare (B.tail as) (B.tail bs)
+
+validateSignature :: B.ByteString -> B.ByteString -> IO Bool
+validateSignature file sig = compareResult
+    where 
+        compareResult = insecureCompare sigFromFile sig
+        sigFromFile = Lib.bytesToHex $ Lib.hmacSha1 hmacKey file
+
+validationResponse :: Text -> Text -> Handler (IO Html)
 validationResponse file sig = 
     let file' = encodeUtf8 file
         sig' = encodeUtf8 sig in
-    case validateSignature file' sig' of
-       True -> defaultLayout [whamlet|congrats!|]
-       False -> validationFailure
+    do 
+        validationResult <- validateSignature file' sig' 
+        case validationResult of
+            True -> defaultLayout [whamlet|congrats!|]
+            False -> validationFailure
 
 getHomeR :: Handler Html
 getHomeR = do
