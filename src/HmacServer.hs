@@ -3,12 +3,13 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module HmacServer() where
+module HmacServer(runServer) where
 
-import Control.Concurrent(threadDelay)
+import Control.Concurrent(forkIO, threadDelay)
 import qualified Data.ByteString as B
 import Data.Text.Encoding(encodeUtf8)
 import Data.Text(Text)
+import Network.HTTP.Simple
 import Network.HTTP.Types.Status(status400, status500)
 import Yesod
 
@@ -75,5 +76,29 @@ getHomeR = do
                Nothing -> badRequest
                Just signature -> validationResponse file signature
 
+runServer :: IO ()
+runServer = warp 3000 HMacForFile
+
+-- Testing
+url :: Request
+url = "http://localhost:3000"
+
+url' :: Request
+url' = "http://localhost:3000?file=fancyfilename&signature=f3477b6f15aef01a2f5b90df0da6c0ac619dfe71"
+
+url'' :: Request
+url''= "http://localhost:3000?file=fancyfilename&signature=03477b6f15aef01a2f5b90df0da6c0ac619dfe71"
+
+testHmacServer :: IO Bool
+testHmacServer = do
+    forkIO runServer
+    response <- httpBS url
+    response' <- httpBS url'
+    response'' <- httpBS url''
+
+    return $ [400, 200, 500] == map getResponseStatusCode [response, response', response'']
+
 main :: IO ()
-main = warp 3000 HMacForFile
+main = do
+    result <- testHmacServer
+    print result

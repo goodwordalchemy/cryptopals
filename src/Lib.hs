@@ -556,7 +556,7 @@ hmac hashfunc blockSize key message =
                   else if B.length key < blockSize
                     then key `B.append` (B.replicate (blockSize - B.length key) 0)
                     else key
-        o_key_pad = (trace $ "key:" ++ show key')$Lib.xorWithLetter key' (chr 0x5c)
+        o_key_pad = Lib.xorWithLetter key' (chr 0x5c)
         i_key_pad = Lib.xorWithLetter key' (chr 0x36)
 
 strictSha1 :: B.ByteString -> B.ByteString

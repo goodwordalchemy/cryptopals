@@ -39,6 +39,7 @@ dependencies:
 - yesod >= 1.4.11
 - yesod-core >= 1.1.1
 - http-types >= 0.12.3
+- http-conduit >= 2.3.7.3
 
 library:
   source-dirs: src
