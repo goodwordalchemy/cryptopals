@@ -4,19 +4,21 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
-module HmacServer(runServer) where
+module HmacServer(runServer, testHmacServer) where
 
 import Control.Concurrent(forkIO, threadDelay)
 import qualified Data.ByteString as B
+import Data.IORef
 import Data.Text.Encoding(encodeUtf8)
 import Data.Text(Text)
+import Debug.Trace
 import Network.HTTP.Simple
 import Network.HTTP.Types.Status(status400, status500)
 import Yesod
 
 import qualified Lib
 
-data HMacForFile = HMacForFile
+data HMacForFile = HMacForFile { delayTime :: Int }
 
 mkYesod "HMacForFile" [parseRoutes|
 / HomeR GET
@@ -37,23 +39,20 @@ validationFailure = do
 hmacKey :: B.ByteString
 hmacKey = "key"
 
-delayTime :: Int
-delayTime = 50 * 1000
-
-insecureCompare :: B.ByteString -> B.ByteString -> IO Bool
-insecureCompare as bs
+insecureCompare :: Int ->  B.ByteString -> B.ByteString -> IO Bool
+insecureCompare delayTime as bs
   | B.length as == 0 && B.length bs == 0 = return True
   | B.length as == 0 = return False
   | B.length bs == 0 = return False
   | B.head as /= B.head bs = return False
   | otherwise = do
       threadDelay delayTime
-      insecureCompare (B.tail as) (B.tail bs)
+      insecureCompare delayTime (B.tail as) (B.tail bs)
 
-validateSignature :: B.ByteString -> B.ByteString -> IO Bool
-validateSignature file sig = compareResult
+validateSignature :: Int -> B.ByteString -> B.ByteString -> IO Bool
+validateSignature delayTime file sig = compareResult
     where 
-        compareResult = insecureCompare sigFromFile sig
+        compareResult = insecureCompare delayTime sigFromFile sig
         sigFromFile = Lib.bytesToHex $ Lib.hmacSha1 hmacKey file
 
 validationResponse :: Text -> Text -> Handler (Html)
@@ -61,7 +60,8 @@ validationResponse file sig =
     let file' = encodeUtf8 file
         sig' = encodeUtf8 sig in
     do 
-        validationResult <- liftIO $ validateSignature file' sig' 
+        delayTime <- fmap delayTime getYesod
+        validationResult <- liftIO $ validateSignature delayTime file' sig' 
         case validationResult of
             True -> defaultLayout [whamlet|congrats!|]
             False -> validationFailure
@@ -77,9 +77,11 @@ getHomeR = do
                Nothing -> badRequest
                Just signature -> validationResponse file signature
 
-runServer :: IO ()
-runServer = warp 3000 HMacForFile
-
+runServer :: Int -> IO ()
+runServer delayTime = do
+    warp 3000 HMacForFile
+        { delayTime = delayTime }
+                    
 -- Testing
 url :: Request
 url = "http://localhost:3000"
@@ -92,7 +94,7 @@ url''= "http://localhost:3000?file=fancyfilename&signature=03477b6f15aef01a2f5b9
 
 testHmacServer :: IO Bool
 testHmacServer = do
-    forkIO runServer
+    forkIO $ runServer (50*1000)
     response <- httpBS url
     response' <- httpBS url'
     response'' <- httpBS url''
