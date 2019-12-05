@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TemplateHaskell       #-}
@@ -37,7 +38,7 @@ hmacKey :: B.ByteString
 hmacKey = "key"
 
 delayTime :: Int
-delayTime = 50
+delayTime = 50 * 1000
 
 insecureCompare :: B.ByteString -> B.ByteString -> IO Bool
 insecureCompare as bs
