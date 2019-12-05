@@ -22,9 +22,9 @@ createRequest signature = parseRequest_
 
 timedResponse :: Request -> IO (Pico, Int)
 timedResponse request = do
-    start <- Lib.getPicoSinceEpoch
-    response <- httpBS $ request
-    end <- Lib.getPicoSinceEpoch
+    !start <- Lib.getPicoSinceEpoch
+    !response <- httpBS $ request
+    !end <- Lib.getPicoSinceEpoch
     return $ (end-start, getResponseStatusCode response)
     
 
@@ -51,7 +51,7 @@ findHmac soFar
   | B.length soFar == 40 = return soFar
   | otherwise = do
       let sigs = getNextSignatures soFar
-      times <- sequence 
+      !times <- sequence 
             $ map timeSignature sigs
       let bestSig = maxBySnd $ zip sigs times
           cur = fst $ B.splitAt (1 + B.length soFar) bestSig
@@ -82,7 +82,7 @@ test2 = do
 test3 :: IO ()
 test3 = do
     _ <- forkIO runServer
-    result' <- findHmac B.empty 
+    _ <- timeSignature "kickstart the server"
     result <- findHmac B.empty 
     print result
 
