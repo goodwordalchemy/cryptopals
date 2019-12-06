@@ -52,8 +52,9 @@ insecureCompare delayTime as bs
 validateSignature :: Int -> B.ByteString -> B.ByteString -> IO Bool
 validateSignature delayTime file sig = compareResult
     where 
-        compareResult = insecureCompare delayTime sigFromFile sig
-        sigFromFile = Lib.bytesToHex $ Lib.hmacSha1 hmacKey file
+        compareResult = (trace $ "sigFroMFile:" ++ show sigFromFile ++ "\nsigBytes: " ++ show sigBytes  ++ "\n")$ insecureCompare delayTime sigFromFile sigBytes
+        sigFromFile = Lib.hmacSha1 hmacKey file
+        sigBytes = Lib.hexToBytes sig
 
 validationResponse :: Text -> Text -> Handler (Html)
 validationResponse file sig = 

@@ -23,7 +23,9 @@ baseUrl = "http://localhost:3000?file=fancyfilename&signature="
 createRequest :: B.ByteString -> Request
 createRequest signature = parseRequest_ 
                         $ BC.unpack
-                        $ baseUrl `B.append` signature
+                        $ baseUrl `B.append` hexSig
+    where
+        hexSig = Lib.bytesToHex signature
 
 timedResponse :: Request -> IO (Pico, Int)
 timedResponse request = do
@@ -41,11 +43,11 @@ getNextSignatures soFar = map addLetterAndPadding [0..255]
     where
         addLetterAndPadding l = 
             B.concat [ soFar 
-                     , Lib.bytesToHex $ B.singleton l
+                     , B.singleton l
                      , padding
                      ]
         padding = BC.replicate nPadding 'A'
-        nPadding = 40 - 2 - (B.length soFar)
+        nPadding = 20 - 1 - (B.length soFar)
         
 
 maxBySnd :: Ord b => [(a, b)] -> a
@@ -62,11 +64,11 @@ nextByte delayTime soFar = go $ getNextSignatures soFar
                    then return $ Just $ extractCur s
                    else go ss
 
-        cutoff = expectedDelay + 0.1 * expectedDelay + (0.8 * delayTime')
+        cutoff = expectedDelay + (0.05 * expectedDelay) + (0.9 * delayTime')
         expectedDelay = delayTime' * (fromIntegral $ B.length soFar)
-        delayTime' = (fromIntegral delayTime) / 1000000
+        delayTime' = (fromIntegral delayTime) / (10^6)
 
-        extractCur = fst . B.splitAt (2 + B.length soFar)
+        extractCur = fst . B.splitAt (1 + B.length soFar)
         
 delayTime :: Int 
 delayTime = 50 * 1000
@@ -79,7 +81,7 @@ backtrack b = (trace $ "backtracking " ++ show b)
 
 findHmac :: B.ByteString -> IO B.ByteString
 findHmac soFar 
-  | B.length soFar == 40 = return soFar
+  | B.length soFar == 20 = return soFar
   | otherwise = do
       maybeCur <- nextByte delayTime soFar
       case maybeCur of
@@ -114,7 +116,7 @@ test3 = do
     _ <- forkIO $ runServer delayTime
     _ <- timeSignature "kickstart the server"
     -- result <- findHmac B.empty 
-    result <- findHmac "f3477b6f15aef01a2f5b90df0da6c"
+    result <- findHmac $ Lib.hexToBytes "f3477b6f15aef01a2f5b90df"
     print result
 
 main :: IO ()
