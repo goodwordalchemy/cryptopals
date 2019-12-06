@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Challenge31(
-    getNextSignatures, timeSignature
+    nextByte, findHmac, NextByteFunc
 ) where
 
 import Control.Concurrent(forkIO, threadDelay)
@@ -53,41 +53,46 @@ getNextSignatures soFar = map addLetterAndPadding [0..255]
 maxBySnd :: Ord b => [(a, b)] -> a
 maxBySnd = fst . maximumBy (\(_a, b) (_, b') -> compare b  b')
 
-nextByte :: Int -> B.ByteString -> IO (Maybe B.ByteString)
-nextByte delayTime soFar = go $ getNextSignatures soFar
+type NextByteFunc = (Float, Float) -> Int -> B.ByteString -> IO (Maybe B.ByteString)
+
+nextByte :: NextByteFunc
+nextByte (a,b) delayTime soFar = go $ getNextSignatures soFar
     where
         go [] = return Nothing
         go (s:ss) = do
             time <- timeSignature s
             (trace $ "time: " ++ show time ++ ", cutoff: " ++ show cutoff) $ 
-                if time > cutoff
+                if realToFrac time > cutoff
                    then return $ Just $ extractCur s
                    else go ss
 
-        cutoff = expectedDelay + (0.05 * expectedDelay) + (0.9 * delayTime')
+        cutoff = expectedDelay + (a * expectedDelay) + (b * delayTime')
         expectedDelay = delayTime' * (fromIntegral $ B.length soFar)
         delayTime' = (fromIntegral delayTime) / (10^6)
 
         extractCur = fst . B.splitAt (1 + B.length soFar)
         
-delayTime :: Int 
-delayTime = 50 * 1000
-
 
 backtrack :: B.ByteString -> B.ByteString
 backtrack b = (trace $ "backtracking " ++ show b)
             $ fst
             $ B.splitAt (B.length b - 2) b
 
-findHmac :: B.ByteString -> IO B.ByteString
-findHmac soFar 
+findHmac 
+    :: NextByteFunc -> (Float, Float) -> Int -> B.ByteString -> IO B.ByteString
+findHmac nextByteFunc coefs delayTime soFar 
   | B.length soFar == 20 = return soFar
   | otherwise = do
-      maybeCur <- nextByte delayTime soFar
+      maybeCur <- nextByteFunc coefs delayTime soFar
       case maybeCur of
-        Just cur -> findHmac cur
-        Nothing -> findHmac $ backtrack soFar
+        Just cur -> findHmac nextByteFunc coefs delayTime cur
+        Nothing -> findHmac nextByteFunc coefs delayTime $ backtrack soFar
 
+delayTime :: Int 
+delayTime = 50 * 1000
+
+findHmac50ms :: B.ByteString -> IO B.ByteString
+findHmac50ms = findHmac nextByte (0.05, 0.9) delayTime
 
 
 test1 :: IO ()
@@ -114,9 +119,8 @@ test2 = do
 test3 :: IO ()
 test3 = do
     _ <- forkIO $ runServer delayTime
-    _ <- timeSignature "kickstart the server"
-    -- result <- findHmac B.empty 
-    result <- findHmac $ Lib.hexToBytes "f3477b6f15aef01a2f5b90df"
+    -- result <- findHmac50ms B.empty 
+    result <- findHmac50ms $ Lib.hexToBytes "f3477b6f15aef01a2f5b90df"
     print result
 
 main :: IO ()

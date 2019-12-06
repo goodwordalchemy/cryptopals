@@ -30,6 +30,9 @@ import qualified Challenge27 as C27
 import qualified Challenge28 as C28
 import qualified Challenge29 as C29
 import qualified Challenge30 as C30
+-- testing not applicable for C31
+-- testing not applicable for C22
+import qualified Challenge33 as C33
 
 import MD4(md4Tests)
 
@@ -224,6 +227,12 @@ challenge30Test = TestCase
                       True
                       C30.challenge30
 
+challenge33Test = TestCase
+                $ assertEqual
+                      "Challenge 33: Implement Diffie-Hellman"
+                      True
+                      C33.challenge33
+
 testList = TestList [ challenge1Test
                     , challenge2Test
                     , challenge3Test
@@ -254,6 +263,7 @@ testList = TestList [ challenge1Test
                     , challenge29Test
                     , md4Tests
                     , challenge30Test
+                    , challenge33Test
                     ]
 main :: IO ()
 main = do
