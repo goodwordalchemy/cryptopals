@@ -6,7 +6,7 @@ g :: Integer
 g = 2
 
 a :: Integer
-a = 33
+a = p - 33
 
 b :: Integer
 b = 22
