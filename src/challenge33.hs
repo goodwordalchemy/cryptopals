@@ -30,20 +30,25 @@ modexp base exponent modulus
                 b' = (b*b) `mod` modulus
                 
 
-genPublicKey :: Integer -> Integer
-genPublicKey ex = modexp g ex p
+genPublicKey :: Integer -> Integer -> Integer -> Integer
+genPublicKey base privateKey modulus = 
+    modexp base privateKey modulus
+
+getCommonKey :: Integer -> Integer -> Integer -> Integer
+getCommonKey yourPublic myPrivate modulus = 
+    modexp yourPublic myPrivate modulus
 
 _A :: Integer
-_A = genPublicKey a
+_A = genPublicKey g a p
 
 _B :: Integer
-_B = genPublicKey b
+_B = genPublicKey g b p
 
 sA :: Integer
-sA = modexp _B a p
+sA = getCommonKey _B a p
 
 sB :: Integer
-sB = modexp _A b p
+sB = getCommonKey _A b p
 
 challenge33 :: Bool
 challenge33 = sA == sB
