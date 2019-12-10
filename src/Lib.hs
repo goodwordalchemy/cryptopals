@@ -52,6 +52,7 @@ module Lib ( mapWithOrig
            , lazyB
            , strictBL
            , hmacSha1
+           , strictSha1
            ) where
 
 import Control.Concurrent(threadDelay)
