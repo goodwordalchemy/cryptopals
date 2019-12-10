@@ -63,8 +63,8 @@ updateWithBaseAndModulus base_ modulus_ person =
     let priv = view (keyChain.privateKey) person
         pub = genPublicKey base_ priv modulus_
         
-        person' = set (keyChain.publicKey) pub person
-        person'' = set (keyChain.modulus) modulus_ person'
+        person' = set (keyChain.publicKey) (Just pub) person
+        person'' = set (keyChain.modulus) (Just modulus_) person'
 
     in person''
 
