@@ -41,6 +41,7 @@ dependencies:
 - http-types >= 0.12.3
 - http-conduit >= 2.3.7.3
 - timeit >= 2.0
+- lens
 
 library:
   source-dirs: src
