@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Lens
 import Data.ByteString as B
+import Data.Maybe(fromJust)
+import Debug.Trace
 
 import DiffieHellman( genPublicKey
                     , getCommonKey
@@ -83,11 +85,11 @@ sendInvitation base_ modulus_ (a, b) =
 
 receiveInvitation :: Person -> Person
 receiveInvitation b = 
-    let g = view (inbound.base) b
-        p = view (inbound.modulus') b
+    let Just g = preview (inbound.base) b
+        Just p = preview (inbound.modulus') b
         b' = updateWithBaseAndModulus g p b
 
-        aPub = view (inbound.publicKey') b'
+        Just aPub = preview (inbound.publicKey') b'
         bPriv = view (keyChain.privateKey) b'
         Just modulus_ = view (keyChain.modulus) b'
         commonKey_ = getCommonKey aPub bPriv modulus_
@@ -105,7 +107,7 @@ sendAcceptance (a, b) =
 
 receiveAcceptance :: Person -> Person
 receiveAcceptance a =
-    let bPub = view (inbound.publicKey') a
+    let Just bPub = (trace $ "a:" ++ show a)$ preview (inbound.publicKey') a
         aPriv = view (keyChain.privateKey) a
         Just modulus_ = view (keyChain.modulus) a
         commonKey_ = getCommonKey bPub aPriv modulus_
@@ -116,7 +118,7 @@ receiveAcceptance a =
 
 commonAESKey :: Person -> B.ByteString
 commonAESKey p = 
-    let (Just key) = view (keyChain.commonKey) p 
+    let key = (trace $ show p)$ fromJust $ view (keyChain.commonKey) p 
     in Lib.strictSha1 . Lib.littleEndian64 . fromInteger $ key
 
 prepareEncryptedMessage 
