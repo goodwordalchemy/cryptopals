@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Lens
+import Control.Monad.State
 import Data.ByteString as B
 import Data.Maybe(fromJust)
 import Debug.Trace
@@ -78,7 +79,7 @@ sendMessage (a, b) =
 
 sendInvitation :: Integer -> Integer -> PP -> PP
 sendInvitation base_ modulus_ (a, b) =
-    let Just aPub = view (keyChain.publicKey) a
+    let aPub = fromJust $ view (keyChain.publicKey) a
         msg = Invitation aPub base_ modulus_
         a' = set outbound msg a
     in sendMessage (a', b)
@@ -107,7 +108,7 @@ sendAcceptance (a, b) =
 
 receiveAcceptance :: Person -> Person
 receiveAcceptance a =
-    let Just bPub = (trace $ "a:" ++ show a)$ preview (inbound.publicKey') a
+    let Just bPub = preview (inbound.publicKey') a
         aPriv = view (keyChain.privateKey) a
         Just modulus_ = view (keyChain.modulus) a
         commonKey_ = getCommonKey bPub aPriv modulus_
@@ -118,7 +119,7 @@ receiveAcceptance a =
 
 commonAESKey :: Person -> B.ByteString
 commonAESKey p = 
-    let key = (trace $ show p)$ fromJust $ view (keyChain.commonKey) p 
+    let key = fromJust $ view (keyChain.commonKey) p 
     in Lib.strictSha1 . Lib.littleEndian64 . fromInteger $ key
 
 prepareEncryptedMessage 
@@ -148,18 +149,18 @@ receiveEncryptedMessage p =
     
 echoBot :: Integer -> Integer -> Integer -> Integer -> Bool
 echoBot aPriv bPriv g p = 
-    let a = makePerson "Alice" aPriv
-        b = makePerson "Bob" bPriv
+    let a = updateWithBaseAndModulus g p $ makePerson "Alice" aPriv
+        b = updateWithBaseAndModulus g p $ makePerson "Bob" bPriv
         (a', b') = sendInvitation g p (a, b)
-        b'' = receiveInvitation b
+        b'' = receiveInvitation b'
         (a'', b''') = sendAcceptance (a', b'')
-        (a''', b'''') = 
+        (a''', b'''') = (trace $ "a:" ++ show a'' ++ "\nb:" ++ show b''')$
             sendEncryptedMessage 
                 "hello with my message" 
                 "YELLOW SUBMARINE" 
                 (a'', b''')
-        mAB = receiveEncryptedMessage b''''
-        (b''''', a'''') = 
+        mAB = (trace $"a:" ++ show a''' ++ "\nb: "++ show b'''') $ receiveEncryptedMessage b''''
+        (b''''', a'''') = (trace $"a:" ++ show a''' ++ "\nb: "++ show b'''')$
             sendEncryptedMessage 
                 mAB
                 "MELLOW SUBMARINE" 
