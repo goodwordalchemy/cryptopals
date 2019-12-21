@@ -24,17 +24,18 @@ type PP = (Person, Person)
 data KeyChain = KeyChain
                 { _privateKey :: Integer
                 , _publicKey :: Maybe Integer
+                , _base :: Maybe Integer
                 , _modulus :: Maybe Integer
                 , _commonKey :: Maybe Integer
                 } deriving (Show)
 
 data Message = Invitation 
-                { _publicKey' :: Integer
+                { _publicKey :: Integer
                 , _base :: Integer
                 , _modulus' :: Integer
                 } 
              | Acceptance
-                { _publicKey' :: Integer }
+                { _publicKey :: Integer }
              | Info
                 { _content :: B.ByteString
                 , _iv :: B.ByteString
@@ -77,50 +78,56 @@ sendMessage (a, b) =
         a' = set outbound Quiet a
     in (a', b')
 
-sendInvitation :: Integer -> Integer -> PP -> PP
-sendInvitation base_ modulus_ (a, b) =
-    let aPub = fromJust $ view (keyChain.publicKey) a
-        msg = Invitation aPub base_ modulus_
-        a' = set outbound msg a
-    in sendMessage (a', b)
-
-receiveInvitation :: Person -> Person
-receiveInvitation b = 
-    let Just g = preview (inbound.base) b
-        Just p = preview (inbound.modulus') b
-        b' = updateWithBaseAndModulus g p b
-
-        Just aPub = preview (inbound.publicKey') b'
-        bPriv = view (keyChain.privateKey) b'
-        Just modulus_ = view (keyChain.modulus) b'
-        commonKey_ = getCommonKey aPub bPriv modulus_
-
-        b'' = set (keyChain.commonKey) (Just commonKey_) b'
-
-    in b''
-
-sendAcceptance :: PP -> PP
-sendAcceptance (a, b) = 
-    let (Just bPub) = view (keyChain.publicKey) b
-        msg = Acceptance bPub
-        b' = set outbound msg b
-    in sendMessage (a, b')
-
-receiveAcceptance :: Person -> Person
-receiveAcceptance a =
-    let Just bPub = preview (inbound.publicKey') a
-        aPriv = view (keyChain.privateKey) a
-        Just modulus_ = view (keyChain.modulus) a
-        commonKey_ = getCommonKey bPub aPriv modulus_
-        
-        a' = set (keyChain.commonKey) (Just commonKey_) a
-
-    in a'
+sendInvitation :: State PP ()
+sendInvitation (a, b) = 
+    let (aPub, g, p) = fromJust $ do
+            aPub <- a ^? keyChain.publicKey
+            g <- a ^? keyChain.base
+            p <- a ^? keyChain.modulus
+            return (aPub, g, p)
+        msg = Invitation aPub g p
+        a' = a & outbound .~ msg
+    return $ sendMessage (a', b)
 
 commonAESKey :: Person -> B.ByteString
 commonAESKey p = 
     let key = fromJust $ view (keyChain.commonKey) p 
     in Lib.strictSha1 . Lib.littleEndian64 . fromInteger $ key
+
+receiveInvitation :: State PP ()
+receiveInvitation (a, b) = 
+    let (aPub, g, p) = fromJust $ do
+            aPub <- b ^? inbound.publicKey
+            g <- b ^? inbound.base
+            p <- b ^? inbound.modulus
+            return (aPub, g, p)
+        bPriv = view (keyChain.privateKey) b
+        commonKey_ = getCommonKey aPub bPriv p
+
+        b' = updateWithBaseAndModulus g p b
+           & (keyChain.commonKey) .~ commonKey_ -- may need a just here
+    return $ (a, b')
+
+sendAcceptance :: State PP ()
+sendAcceptance (a, b) = 
+    let bPub = fromJust $ keyChain.publicKey
+        msg = Acceptance bPub
+        b' = b & outbound .~ msg
+    return sendMessage (a, b')
+
+receiveAcceptance :: State PP ()
+receiveAcceptance (a, b) =
+    let (bPub, g, p) = fromJust $ do
+            bPub <- a ^? inbound.publicKey
+            p <- a ^? keyChain.modulus
+            return (bPub, g, p)
+        aPriv = view (keyChain.privateKey) a
+        commonKey_ = getCommonKey bPub aPriv p
+
+        a' = a & keyChain.commonKey .~ commonKey_
+
+    return (a', b)
+
 
 prepareEncryptedMessage 
     :: B.ByteString -> B.ByteString -> Person -> Person
@@ -146,28 +153,24 @@ receiveEncryptedMessage p =
         aes = Lib.initAES128 (commonAESKey p) 
         info = Lib.cbcDecryption aes iv_ content_
     in info
+
+-- left side is initiator.  Should have g and p properties set already.
+echoBot :: State PP (String, String)
+echoBot = do
+    sendInvitation
+    receiveInvitation
+    sendAcceptance
+    sendEncryptedMessage "hello with my message" "YELLOW SUBMARINE" 
+    mAB <- receiveEncryptedMessage
+    sendEncryptedMessage' mAB "MELLOW SUBMARINE" 
+    mBA <- receiveEncryptedMessage'
+    return (mAB, mBA)
     
-echoBot :: Integer -> Integer -> Integer -> Integer -> Bool
-echoBot aPriv bPriv g p = 
-    let a = updateWithBaseAndModulus g p $ makePerson "Alice" aPriv
-        b = updateWithBaseAndModulus g p $ makePerson "Bob" bPriv
-        (a', b') = sendInvitation g p (a, b)
-        b'' = receiveInvitation b'
-        (a'', b''') = sendAcceptance (a', b'')
-        (a''', b'''') = (trace $ "a:" ++ show a'' ++ "\nb:" ++ show b''')$
-            sendEncryptedMessage 
-                "hello with my message" 
-                "YELLOW SUBMARINE" 
-                (a'', b''')
-        mAB = (trace $"a:" ++ show a''' ++ "\nb: "++ show b'''') $ receiveEncryptedMessage b''''
-        (b''''', a'''') = (trace $"a:" ++ show a''' ++ "\nb: "++ show b'''')$
-            sendEncryptedMessage 
-                mAB
-                "MELLOW SUBMARINE" 
-                (b'''', a''')
-        mBA = receiveEncryptedMessage a''''
-     in mAB == mBA
 
 main :: IO ()
-main = print $ echoBot 1 2 3 4
+main = do
+    let (g, p, aPriv, bPriv) =  (1, 4, 2, 3)
+        a = updateWithBaseAndModulus g p $ makePerson "Alice" aPriv
+        b = makePerson "Bob" bPriv
+    print $ evalState echoBot (a, b)
         
